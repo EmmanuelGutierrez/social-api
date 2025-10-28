@@ -1,7 +1,9 @@
-import { Field, ID } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { roles } from 'src/common/enum/roles.enum';
 
+@ObjectType()
 @Schema({ timestamps: true })
 export class User extends Document {
   @Field(() => ID)
@@ -24,8 +26,8 @@ export class User extends Document {
   password: string;
 
   @Field(() => String)
-  @Prop({ type: String, required: true, default: 'user' })
-  role: string;
+  @Prop({ type: String, required: true, default: roles.USER })
+  role: roles;
 
   @Field(() => String)
   @Prop({ type: String })

@@ -5,6 +5,7 @@ export const config = registerAs('config', () => {
     api: {
       port: process.env.PORT,
       jwtSecret: process.env.JWT_SECRET,
+      wsJwtSecret: process.env.WS_JWT_SECRET,
       apiKey: process.env.API_KEY,
       env: process.env.API_ENV,
       frontUrl: process.env.FRONT_URL,

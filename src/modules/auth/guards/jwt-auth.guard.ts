@@ -6,7 +6,9 @@ import {
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthGuard, IAuthGuard } from '@nestjs/passport';
+import { IS_SUBSCRIPTION_KEY } from 'src/common/decorators/isSubscription.decorator';
 import { IS_PUBLIC_KEY } from 'src/common/decorators/public.decorator';
+import { tokenType } from 'src/common/enum/tokenType.enum';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') implements IAuthGuard {
@@ -23,16 +25,18 @@ export class JwtAuthGuard extends AuthGuard('jwt') implements IAuthGuard {
 
   async canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.get(IS_PUBLIC_KEY, context.getHandler());
-
-    // console.log('1', context.getArgs());
-
-    if (isPublic) return true;
+    const isSub = this.reflector.get(IS_SUBSCRIPTION_KEY, context.getHandler());
+    if (isPublic || isSub) {
+      return true;
+    }
     await super.canActivate(context);
     const ctx = GqlExecutionContext.create(context);
 
     const request = ctx.getContext().req;
     const { user } = request;
-    if (!user) throw new UnauthorizedException('no auth');
+
+    if (!user || user.type !== tokenType.AUTH)
+      throw new UnauthorizedException('no auth');
 
     return user ? true : false;
   }

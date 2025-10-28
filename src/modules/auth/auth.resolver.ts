@@ -2,30 +2,26 @@ import { Resolver, Mutation, Args, Context, Query } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { LoginInput } from './dto/login.input';
+import { CreateUserInput } from '../user/dto/create-user.input';
 
 @Resolver()
 export class AuthResolver {
   constructor(private auth: AuthService) {}
 
   @Mutation(() => String)
-  async register(
-    @Args('email') email: string,
-    @Args('password') password: string,
-  ) {
-    const user = await this.auth.register(email, password);
+  async register(@Args('register') data: CreateUserInput) {
+    const user = await this.auth.register(data);
     return `User ${user.email} registered`;
   }
 
   @Mutation(() => String)
-  async login(
-    @Args('email') email: string,
-    @Args('password') password: string,
-    @Context() ctx,
-  ) {
-    const user = await this.auth.validateUser(email, password);
+  async login(@Args('loginInput') data: LoginInput, @Context() ctx) {
+    const user = await this.auth.validateUser(data.email, data.password);
     const accessToken = await this.auth.signAccessToken(user);
     const refreshToken = await this.auth.createRefreshTokenForUser(user._id);
-
+    const wsToken = await this.auth.signAccessTokenWS(user);
+    console.log('WS TOKEN', wsToken);
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
       sameSite: 'strict',
@@ -35,7 +31,7 @@ export class AuthResolver {
       sameSite: 'strict',
     });
 
-    return accessToken;
+    return wsToken;
   }
 
   @UseGuards(JwtAuthGuard)

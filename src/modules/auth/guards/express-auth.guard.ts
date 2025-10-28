@@ -24,7 +24,7 @@ export class JwtExpressAuthGuard
 
     const { user } = context.switchToHttp().getRequest();
 
-    if (!user) throw new UnauthorizedException('Unauthorized');
+    if (!user) throw new UnauthorizedException('Unauthorizedd');
 
     return user ? true : false;
   }

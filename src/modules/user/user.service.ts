@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './entities/user.entity';
+import { CreateUserInput } from './dto/create-user.input';
 
 @Injectable()
 export class UserService {
@@ -9,6 +10,14 @@ export class UserService {
 
   async findByEmail(email: string) {
     const res = await this.userModel.findOne({ email });
+    if (!res) {
+      throw new NotFoundException('user not found');
+    }
+    return res;
+  }
+
+  async findByEmailWithPassword(email: string) {
+    const res = await this.userModel.findOne({ email }).select('+password');
     if (!res) {
       throw new NotFoundException('user not found');
     }
@@ -23,8 +32,8 @@ export class UserService {
     return res;
   }
 
-  async createUser(email: string, passwordHash: string) {
-    const user = new this.userModel({ email, passwordHash });
+  async createUser(data: CreateUserInput) {
+    const user = new this.userModel(data);
     return user.save();
   }
 

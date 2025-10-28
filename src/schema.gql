@@ -2,12 +2,98 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type User {
+  _id: ID!
+  name: String!
+  lastname: String!
+  email: String!
+  role: String!
+  refreshTokenHash: String!
+}
+
+type Post {
+  _id: ID!
+  title: String
+  body: String!
+  reactions: [User!]!
+  comments: [Post!]!
+  tags: [String!]!
+  user: User!
+}
+
+type File {
+  _id: ID!
+  asset_id: String
+  public_id: String!
+  format: String!
+  resource_type: String!
+  bytes: Float!
+  url: String!
+  secure_url: String!
+  folder: String
+  original_filename: String!
+  createdAt: Float!
+  updatedAt: Float!
+}
+
+type PostDataReturnDto {
+  page: Float!
+  inThisPage: Float!
+  total: Float!
+  data: [Post!]!
+}
+
 type Query {
   me: String!
   test: String!
+  allPosts(params: FilterInput!): PostDataReturnDto!
+  mePosts(params: FilterInput!): PostDataReturnDto!
+  getOne(id: String!): Post!
+  getComments(id: String!): Post!
+  allFiles: [File!]!
+}
+
+input FilterInput {
+  limit: Float
+  page: Float
+  tags: [String!]
 }
 
 type Mutation {
-  register(email: String!, password: String!): String!
-  login(email: String!, password: String!): String!
+  register(register: CreateUserInput!): String!
+  login(loginInput: LoginInput!): String!
+  createPost(data: CreatePostInput!, files: [Upload!]): Post!
+  updatePost(data: UpdatePostInput!): Post!
+  updateReaction(id: String!): Post!
+  comment(data: CreatePostInput!, id: String!): Post!
+}
+
+input CreateUserInput {
+  email: String!
+  password: String!
+  name: String!
+  lastname: String!
+  birth_date: Int!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input CreatePostInput {
+  title: String
+  body: String!
+  tags: [String!]
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+input UpdatePostInput {
+  id: String!
+}
+
+type Subscription {
+  subNewPosts: Post!
 }

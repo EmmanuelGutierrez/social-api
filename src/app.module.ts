@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, UnauthorizedException } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
@@ -11,19 +11,57 @@ import { ConfigModule } from '@nestjs/config';
 import { getEnvPath } from './common/utils/env.helper';
 import { config } from './common/config/config';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { PostModule } from './modules/post/post.module';
+import { FileModule } from './modules/file/file.module';
+import { RedisPubSubModule } from './modules/redis-pub-sub/redis-pub-sub.module';
+import { AuthService } from './modules/auth/auth.service';
+import { contextGraphqlWs } from './common/interfaces/context-graphql-ws';
+import { toLowerCaseKeys } from './common/utils/toLowerCaseKeys';
+import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
 @Module({
   imports: [
     // MongooseModule.forRoot(
     //   process.env.MONGO_URI || 'mongodb://localhost/testdb',
     // ),
     DatabaseModule,
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      context: ({ req, res, extra }) => ({ req, res, extra }),
-      playground: false,
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      // cors: false, // ya lo maneja main.ts
+      imports: [AuthModule],
+      inject: [AuthService],
+      useFactory: async (authService: AuthService) => {
+        return {
+          subscriptions: {
+            'graphql-ws': {
+              onConnect: (ctx: contextGraphqlWs) => {
+                const { extra, connectionParams } = ctx;
+                const AuthorizationObj: { authorization?: string } =
+                  toLowerCaseKeys(connectionParams);
+                if (!AuthorizationObj.authorization) {
+                  throw new UnauthorizedException('No token auth');
+                }
+                const tokenData = authService.decodeToken(
+                  connectionParams.Authorization as string,
+                );
+                if (!tokenData) {
+                  throw new UnauthorizedException('No user');
+                }
+                extra.user = tokenData;
+                // jwtService.decode(ctx.connectionParams.Authorization as string);
+              },
+            },
+          },
+          autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+          playground: false,
+          // buildSchemaOptions: {
+          //   scalarsMap:[{type:}]
+          // },
+          plugins: [ApolloServerPluginLandingPageLocalDefault()],
+          installSubscriptionHandlers: true,
+          context: ({ req, res, extra }) => {
+            return { req, res, extra };
+          },
+        };
+      },
     }),
     ConfigModule.forRoot({
       envFilePath: getEnvPath(`${__dirname}/common/envs`),
@@ -34,6 +72,7 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
         PORT: Joi.number().default(3000),
         API_KEY: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
+        WS_JWT_SECRET: Joi.string().required(),
         DATABASE_NAME: Joi.string().required(),
         DATABASE_PORT: Joi.number().required(),
         DATABASE_HOST: Joi.string().required(),
@@ -52,6 +91,10 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
     ThrottlerModule.forRoot({ throttlers: [{ ttl: 60, limit: 20 }] }),
     AuthModule,
     UserModule,
+    PostModule,
+    FileModule,
+    RedisPubSubModule,
+    CloudinaryModule,
   ],
 })
 export class AppModule {}

@@ -7,7 +7,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './common/exception/http-exception-filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -50,6 +50,8 @@ async function bootstrap() {
   // const redisIoAdapter = new RedisIoAdapter(app);
   // await redisIoAdapter.connectToRedis();
   // app.useWebSocketAdapter(redisIoAdapter);
+  //!!  {'Apollo-Require-Preflight': 'true'}}
+  app.use(graphqlUploadExpress({ maxFileSize: 2 * 1000 * 1000 }));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -60,7 +62,7 @@ async function bootstrap() {
       },
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
+  // app.useGlobalFilters(new HttpExceptionFilter());
 
   const configSwagger = new DocumentBuilder()
     .setTitle('Monotributo Recurrente')
@@ -74,6 +76,7 @@ async function bootstrap() {
   SwaggerModule.setup('api-doc', app, document);
 
   await app.listen(port || 4000);
-  console.log(`🚀 Server running on http://localhost:${port}/graphql`);
+  console.log(`🚀 Server GRAPHQL running on ${await app.getUrl()}/graphql`);
+  console.log(`🚀 Server running on ${await app.getUrl()}`);
 }
 void bootstrap();
