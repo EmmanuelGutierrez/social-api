@@ -6,12 +6,17 @@ import { FilterQuery, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterInput } from './dto/filter.input';
 import { User } from '../user/entities/user.entity';
-import { postTypes } from 'src/common/enum/postTypes.enum';
+// import { postTypes } from 'src/common/enum/postTypes.enum';
 import { FileService } from '../file/file.service';
 import { RedisPubSubService } from '../redis-pub-sub/redis-pub-sub.service';
 import { SUB_NEW_POSTS } from 'src/common/constants/redis/sub-new-posts';
 //import { MessageService } from './message/message.service';
 import { FileUpload } from 'graphql-upload/processRequest.mjs';
+import { FeedPostService } from './feed-post/feed-post.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { feedPostQueueName } from 'src/common/constants/bull/feedPost';
+import { Queue } from 'bullmq';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class PostService {
@@ -20,13 +25,15 @@ export class PostService {
     private postModel: Model<Post>,
     private fileService: FileService,
     private redisPubSub: RedisPubSubService,
+    private feedPostService: FeedPostService,
+    private userService: UserService,
+    @InjectQueue(feedPostQueueName) private postQueue: Queue,
   ) {}
   async create(data: CreatePostInput, userId: string) {
     const post = await this.postModel.create({
       ...data,
-      user: userId,
+      authorId: userId,
     });
-    console.log(post);
     await this.redisPubSub.publish(SUB_NEW_POSTS, {
       [SUB_NEW_POSTS]: post,
     });
@@ -40,7 +47,7 @@ export class PostService {
   ) {
     const post = await this.postModel.create({
       ...data,
-      user: userId,
+      authorId: userId,
     });
 
     const files = await this.fileService.createMany(
@@ -57,10 +64,10 @@ export class PostService {
     userId: string,
     filesData?: Promise<FileUpload>[],
   ) {
-    console.log('ID', userId);
+    const user = await this.userService.findById(userId);
     const post = await this.postModel.create({
       ...data,
-      user: userId,
+      authorId: userId,
     });
 
     if (filesData) {
@@ -70,9 +77,17 @@ export class PostService {
         `posts/files/${userId}`,
       );
     }
-    await this.redisPubSub.publish(SUB_NEW_POSTS, {
-      [SUB_NEW_POSTS]: post,
-    });
+    // await this.redisPubSub.publish(SUB_NEW_POSTS, {
+    //   [SUB_NEW_POSTS]: post,
+    // });
+    for (const follower of user.followers) {
+      await this.postQueue.add('addToFeed', {
+        postId: post._id,
+        followerId: follower.user._id,
+        authorId: userId,
+        authorUsername: user.username,
+      });
+    }
     return post;
   }
 
@@ -84,7 +99,7 @@ export class PostService {
       .limit(limit)
       .populate([
         {
-          path: 'user',
+          path: 'authorId',
           model: User.name,
         },
       ]);
@@ -138,7 +153,7 @@ export class PostService {
         model: User.name,
       },
       {
-        path: 'user',
+        path: 'authorId',
         model: User.name,
       },
     ]);
@@ -184,21 +199,21 @@ export class PostService {
     return `This action removes a #${id} post`;
   }
 
-  async commentPost(id: string, userId: string, data: CreatePostInput) {
-    const post = await this.findOne(id);
-    const res = await this.postModel.create({
-      user: userId,
-      type: postTypes.COMMENT,
-      ...data,
-    });
-    post.comments.push(res);
+  // async commentPost(id: string, userId: string, data: CreatePostInput) {
+  //   const post = await this.findOne(id);
+  //   const res = await this.postModel.create({
+  //     authorId: userId,
+  //     type: postTypes.COMMENT,
+  //     ...data,
+  //   });
+  //   post.comments.push(res);
 
-    return res;
-  }
+  //   return res;
+  // }
 
   async getCommentsPost(id: string) {
     const comments = await this.postModel.findById(id).populate([
-      { path: 'user', model: User.name },
+      { path: 'authorId', model: User.name },
       { path: 'comments', model: Post.name },
     ]);
     return comments;

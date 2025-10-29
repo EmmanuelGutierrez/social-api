@@ -1,8 +1,19 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 @InputType()
 export class CreatePostInput {
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsMongoId()
+  replyTo: string;
+
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()

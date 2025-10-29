@@ -16,13 +16,13 @@ import { FilterInput } from './dto/filter.input';
 import { RedisPubSubService } from '../redis-pub-sub/redis-pub-sub.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { tokenInfoI } from 'src/common/interfaces/token.interface';
-import { SUB_NEW_POSTS } from 'src/common/constants/redis/sub-new-posts';
 
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { FileUpload } from 'graphql-upload/processRequest.mjs';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { IsSubscription } from 'src/common/decorators/isSubscription.decorator';
+import { SubDataReturnDto } from './dto/sub-data-return.dto';
 
 @UseGuards(JwtAuthGuard)
 @Resolver(() => Post)
@@ -77,8 +77,14 @@ export class PostResolver {
   }
 
   @IsSubscription()
-  @Subscription(() => Post, {
-    resolve: (payload: { subNewPosts: Post }) => {
+  @Subscription(() => SubDataReturnDto, {
+    resolve: (payload: {
+      subNewPosts: {
+        postId: string;
+        authorId: string;
+        authorUsername: string;
+      };
+    }) => {
       console.log('payload', payload);
       return payload.subNewPosts;
     },
@@ -89,7 +95,7 @@ export class PostResolver {
   ) {
     console.log('tokenData', tokenData);
     // return this.postService.findAll(params);
-    return this.redisPubSub.asyncIterator(SUB_NEW_POSTS);
+    return this.redisPubSub.asyncIterator(`SUB_NEW_POSTS-${tokenData.id}`);
   }
 
   @Query(() => PostDataReturnDto, { name: 'mePosts' })
@@ -120,14 +126,14 @@ export class PostResolver {
     return await this.postService.updateReactions(id, tokenData.id);
   }
 
-  @Mutation(() => Post, { name: 'comment' })
-  async commentPost(
-    @Args('data') data: CreatePostInput,
-    @Args('id') id: string,
-    @CurrentUser() tokenData: tokenInfoI,
-  ) {
-    return await this.postService.commentPost(id, tokenData.id, data);
-  }
+  // @Mutation(() => Post, { name: 'comment' })
+  // async commentPost(
+  //   @Args('data') data: CreatePostInput,
+  //   @Args('id') id: string,
+  //   @CurrentUser() tokenData: tokenInfoI,
+  // ) {
+  //   return await this.postService.commentPost(id, tokenData.id, data);
+  // }
 
   @Query(() => Post, { name: 'getComments' })
   async getCommentPost(@Args('id') id: string) {

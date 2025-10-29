@@ -17,7 +17,7 @@ export class Post extends Document {
 
   @Field(() => String, { nullable: true })
   @Prop({ type: String })
-  title: string;
+  title?: string;
 
   @Field(() => String)
   @Prop({ type: String, required: true })
@@ -31,13 +31,17 @@ export class Post extends Document {
   })
   reactions: Types.Array<User>;
 
-  @Field(() => [Post])
-  @Prop({
-    type: Types.ObjectId,
-    ref: Post.name,
-    default: [],
-  })
-  comments: Types.Array<Post>;
+  // @Field(() => [Post])
+  // @Prop({
+  //   type: Types.ObjectId,
+  //   ref: Post.name,
+  //   default: [],
+  // })
+  // comments: Types.Array<Post>;
+
+  @Field(() => Post, { nullable: true })
+  @Prop({ type: Types.ObjectId, ref: Post.name })
+  replyTo?: Post;
 
   @Field(() => [String])
   @Prop({ type: [String] })
@@ -53,7 +57,16 @@ export class Post extends Document {
 
   @Field(() => User)
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
-  user: User;
+  authorId: User;
+
+  @Field(() => Number)
+  @Prop({ type: Number })
+  createdAt: number;
+
+  @Field(() => Number)
+  @Prop({ type: Number })
+  updatedAt: number;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
+PostSchema.index({ createdAt: -1, userId: 1 });

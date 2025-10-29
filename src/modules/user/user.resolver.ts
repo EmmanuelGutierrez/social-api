@@ -1,9 +1,12 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Mutation, Args } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
-import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update-user.input';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { tokenInfoI } from 'src/common/interfaces/token.interface';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
 
+@UseGuards(JwtAuthGuard)
 @Resolver(() => User)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
@@ -32,4 +35,12 @@ export class UserResolver {
   // removeUser(@Args('id', { type: () => Int }) id: number) {
   //   return this.userService.remove(id);
   // }
+
+  @Mutation(() => Boolean, { name: 'followUser' })
+  followUser(
+    @Args('userToFollowId') userToFollowId: string,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return this.userService.followUser(tokenData.id, userToFollowId);
+  }
 }

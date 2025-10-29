@@ -2,13 +2,22 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type FollowUserDto {
+  _id: ID!
+  user: User!
+  followDate: Float!
+}
+
 type User {
   _id: ID!
   name: String!
   lastname: String!
+  username: String!
   email: String!
   role: String!
   refreshTokenHash: String!
+  following: [FollowUserDto!]!
+  followers: [FollowUserDto!]!
 }
 
 type Post {
@@ -18,7 +27,9 @@ type Post {
   reactions: [User!]!
   comments: [Post!]!
   tags: [String!]!
-  user: User!
+  authorId: User!
+  createdAt: Float!
+  updatedAt: Float!
 }
 
 type File {
@@ -36,11 +47,31 @@ type File {
   updatedAt: Float!
 }
 
+type FeedPost {
+  userId: User!
+  postId: Post!
+  createdAt: Float!
+  updatedAt: Float!
+}
+
 type PostDataReturnDto {
   page: Float!
   inThisPage: Float!
   total: Float!
   data: [Post!]!
+}
+
+type SubDataReturnDto {
+  postId: String!
+  authorId: String!
+  authorUsername: String!
+}
+
+type FeedPostDataReturnDto {
+  page: Float!
+  inThisPage: Float!
+  total: Float!
+  data: [FeedPost!]!
 }
 
 type Query {
@@ -51,6 +82,7 @@ type Query {
   getOne(id: String!): Post!
   getComments(id: String!): Post!
   allFiles: [File!]!
+  myFeed(params: FilterFeedPostInput!): FeedPostDataReturnDto!
 }
 
 input FilterInput {
@@ -59,9 +91,16 @@ input FilterInput {
   tags: [String!]
 }
 
+input FilterFeedPostInput {
+  limit: Float
+  cursorDate: Int
+  tags: [String!]
+}
+
 type Mutation {
   register(register: CreateUserInput!): String!
   login(loginInput: LoginInput!): String!
+  followUser(userToFollowId: String!): Boolean!
   createPost(data: CreatePostInput!, files: [Upload!]): Post!
   updatePost(data: UpdatePostInput!): Post!
   updateReaction(id: String!): Post!
@@ -70,6 +109,7 @@ type Mutation {
 
 input CreateUserInput {
   email: String!
+  username: String!
   password: String!
   name: String!
   lastname: String!
@@ -95,5 +135,5 @@ input UpdatePostInput {
 }
 
 type Subscription {
-  subNewPosts: Post!
+  subNewPosts: SubDataReturnDto!
 }

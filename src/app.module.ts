@@ -24,6 +24,7 @@ import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
     //   process.env.MONGO_URI || 'mongodb://localhost/testdb',
     // ),
     DatabaseModule,
+
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       imports: [AuthModule],
@@ -36,6 +37,7 @@ import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
                 const { extra, connectionParams } = ctx;
                 const AuthorizationObj: { authorization?: string } =
                   toLowerCaseKeys(connectionParams);
+                console.log('AuthorizationObj', AuthorizationObj);
                 if (!AuthorizationObj.authorization) {
                   throw new UnauthorizedException('No token auth');
                 }

@@ -11,6 +11,11 @@ export class CreateUserInput {
   @Field(() => String)
   @IsNotEmpty()
   @IsString()
+  public readonly username: string;
+
+  @Field(() => String)
+  @IsNotEmpty()
+  @IsString()
   public readonly password: string;
 
   @Field(() => String)
