@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -42,5 +42,18 @@ export class UserResolver {
     @CurrentUser() tokenData: tokenInfoI,
   ) {
     return this.userService.followUser(tokenData.id, userToFollowId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => User, { name: 'meQuery' })
+  async meQuery(@CurrentUser() tokenData: tokenInfoI) {
+    const user = await this.userService.findById(tokenData.id);
+    return user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => String, { name: 'test' })
+  test() {
+    return ' TEST';
   }
 }

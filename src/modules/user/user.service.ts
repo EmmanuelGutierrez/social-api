@@ -67,7 +67,7 @@ export class UserService {
       await userToFollow.save();
       return true;
     } else {
-      const dateNow = new Date().getTime() / 1000;
+      const dateNow = Math.floor(new Date().getTime() / 1000);
 
       const res = await this.userModel.bulkWrite([
         {
@@ -108,7 +108,10 @@ export class UserService {
     return user.save();
   }
 
-  async setRefreshTokenHash(userId: string, hash: string | null) {
-    return this.userModel.findByIdAndUpdate(userId, { refreshTokenHash: hash });
+  async setRefreshTokenHash(
+    userId: string,
+    data: { refreshTokenHash: string | null; refreshTokenExpiresAt: number },
+  ) {
+    return this.userModel.findByIdAndUpdate(userId, data);
   }
 }

@@ -1,9 +1,8 @@
 import { Resolver, Mutation, Args, Context, Query } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
-import { UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoginInput } from './dto/login.input';
 import { CreateUserInput } from '../user/dto/create-user.input';
+import { AuthReturnDto } from './dto/auth-return.dto';
 
 @Resolver()
 export class AuthResolver {
@@ -15,7 +14,7 @@ export class AuthResolver {
     return `User ${user.email} registered`;
   }
 
-  @Mutation(() => String)
+  @Mutation(() => AuthReturnDto)
   async login(@Args('loginInput') data: LoginInput, @Context() ctx) {
     const user = await this.auth.validateUser(data.email, data.password);
     const accessToken = await this.auth.signAccessToken(user);
@@ -31,18 +30,27 @@ export class AuthResolver {
       sameSite: 'strict',
     });
 
-    return wsToken;
+    return { tokenWs: wsToken };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Query(() => String)
-  me(@Context() ctx) {
-    const user = ctx.req.user;
-    return `Authenticated as ${user.email}`;
-  }
+  @Query(() => AuthReturnDto, { name: 'rotateAccessToken' })
+  async rotateAccessToken(@Context() ctx) {
+    const decodeToken = this.auth.decodeToken(
+      ctx.req.cookies.access_token as string,
+    );
+    const newTokens = await this.auth.rotateAccessToken(
+      decodeToken.id,
+      ctx.req.cookies.refresh_token as string,
+    );
+    ctx.res.cookie('access_token', ctx.req.cookies.access_token, {
+      httpOnly: true,
+      sameSite: 'strict',
+    });
+    ctx.res.cookie('refresh_token', newTokens.newToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+    });
 
-  @Query(() => String)
-  test() {
-    return 'TESTs';
+    return { tokenWs: newTokens.newTokenWS };
   }
 }

@@ -58,10 +58,23 @@ export class AuthService {
   }
 
   async createRefreshTokenForUser(userId: string) {
-    const token = crypto.randomBytes(64).toString('hex');
-    const hash: string = await bcrypt.hash(token, 12);
-    await this.userService.setRefreshTokenHash(userId, hash);
-    return token;
+    // const token = crypto.randomBytes(64).toString('hex');
+    // const hash: string = await bcrypt.hash(token, 12);
+    // await this.userService.setRefreshTokenHash(userId, hash);
+    // return token;
+
+    const refreshToken = crypto.randomBytes(64).toString('hex');
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 12);
+
+    const refreshTokenExpiresAt =
+      Math.floor(new Date().getTime() / 1000) + 7 * 24 * 60 * 60;
+
+    await this.userService.setRefreshTokenHash(userId, {
+      refreshTokenHash,
+      refreshTokenExpiresAt,
+    });
+
+    return refreshToken;
   }
 
   decodeToken(token: string) {
@@ -74,8 +87,36 @@ export class AuthService {
     const user = await this.userService.findById(userId);
     if (!user || !user.refreshTokenHash) throw new UnauthorizedException();
     const valid = await bcrypt.compare(token, user.refreshTokenHash);
-    if (!valid) throw new UnauthorizedException('Invalid refresh token');
+    if (!valid) {
+      await this.userService.setRefreshTokenHash(userId, null);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
     const newToken = await this.createRefreshTokenForUser(userId);
     return newToken;
+  }
+
+  async rotateAccessToken(userId: string, token: string) {
+    const user = await this.userService.findById(userId);
+    if (!user || !user.refreshTokenHash) throw new UnauthorizedException();
+    await this.validateRefreshToken(user, token);
+    const newToken = await this.signAccessToken(user);
+    const newTokenWS = await this.signAccessTokenWS(user);
+    return { newToken, newTokenWS };
+  }
+
+  async validateRefreshToken(user: User, token: string) {
+    // const user = await this.userService.findById(userId);
+
+    if (!user.refreshTokenHash || !user.refreshTokenExpiresAt)
+      throw new UnauthorizedException('No refresh token');
+    const isValid = await bcrypt.compare(token, user.refreshTokenHash);
+    if (!isValid) {
+      // await this.userService.setRefreshTokenHash(userId, null);
+      throw new UnauthorizedException('Invalid token');
+    }
+    if (user.refreshTokenExpiresAt < Math.floor(new Date().getTime() / 1000))
+      throw new UnauthorizedException('Token expired');
+
+    return user;
   }
 }

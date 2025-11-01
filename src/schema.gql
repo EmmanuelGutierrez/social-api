@@ -2,87 +2,59 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type FollowUserDto {
-  _id: ID!
-  user: User!
-  followDate: Float!
+type AuthReturnDto {
+  tokenWs: String!
 }
 
-type User {
-  _id: ID!
-  name: String!
-  lastname: String!
-  username: String!
-  email: String!
-  role: String!
-  refreshTokenHash: String!
-  following: [FollowUserDto!]!
-  followers: [FollowUserDto!]!
-}
-
-type Post {
-  _id: ID!
-  title: String
+input CreatePostInput {
   body: String!
-  reactions: [User!]!
-  comments: [Post!]!
-  tags: [String!]!
-  authorId: User!
+  replyTo: String
+  tags: [String!]
+  title: String
+}
+
+input CreateUserInput {
+  birth_date: Int!
+  email: String!
+  lastname: String!
+  name: String!
+  password: String!
+  username: String!
+}
+
+type FeedPost {
   createdAt: Float!
+  postId: Post!
   updatedAt: Float!
+  userId: User!
+}
+
+type FeedPostDataReturnDto {
+  data: [FeedPost!]!
+  inThisPage: Float!
+  page: Float!
+  total: Float!
 }
 
 type File {
   _id: ID!
   asset_id: String
-  public_id: String!
-  format: String!
-  resource_type: String!
   bytes: Float!
-  url: String!
-  secure_url: String!
+  createdAt: Float!
   folder: String
+  format: String!
   original_filename: String!
-  createdAt: Float!
+  public_id: String!
+  resource_type: String!
+  secure_url: String!
   updatedAt: Float!
+  url: String!
 }
 
-type FeedPost {
-  userId: User!
-  postId: Post!
-  createdAt: Float!
-  updatedAt: Float!
-}
-
-type PostDataReturnDto {
-  page: Float!
-  inThisPage: Float!
-  total: Float!
-  data: [Post!]!
-}
-
-type SubDataReturnDto {
-  postId: String!
-  authorId: String!
-  authorUsername: String!
-}
-
-type FeedPostDataReturnDto {
-  page: Float!
-  inThisPage: Float!
-  total: Float!
-  data: [FeedPost!]!
-}
-
-type Query {
-  me: String!
-  test: String!
-  allPosts(params: FilterInput!): PostDataReturnDto!
-  mePosts(params: FilterInput!): PostDataReturnDto!
-  getOne(id: String!): Post!
-  getComments(id: String!): Post!
-  allFiles: [File!]!
-  myFeed(params: FilterFeedPostInput!): FeedPostDataReturnDto!
+input FilterFeedPostInput {
+  cursorDate: Int
+  limit: Float
+  tags: [String!]
 }
 
 input FilterInput {
@@ -91,29 +63,10 @@ input FilterInput {
   tags: [String!]
 }
 
-input FilterFeedPostInput {
-  limit: Float
-  cursorDate: Int
-  tags: [String!]
-}
-
-type Mutation {
-  register(register: CreateUserInput!): String!
-  login(loginInput: LoginInput!): String!
-  followUser(userToFollowId: String!): Boolean!
-  createPost(data: CreatePostInput!, files: [Upload!]): Post!
-  updatePost(data: UpdatePostInput!): Post!
-  updateReaction(id: String!): Post!
-  comment(data: CreatePostInput!, id: String!): Post!
-}
-
-input CreateUserInput {
-  email: String!
-  username: String!
-  password: String!
-  name: String!
-  lastname: String!
-  birth_date: Int!
+type FollowUserDto {
+  _id: ID!
+  followDate: Float!
+  user: User!
 }
 
 input LoginInput {
@@ -121,19 +74,81 @@ input LoginInput {
   password: String!
 }
 
-input CreatePostInput {
-  title: String
-  body: String!
-  tags: [String!]
+type Mutation {
+  createPost(data: CreatePostInput!, files: [Upload!]): Post!
+  followUser(userToFollowId: String!): Boolean!
+  login(loginInput: LoginInput!): AuthReturnDto!
+  register(register: CreateUserInput!): String!
+  updatePost(data: UpdatePostInput!): Post!
+  updateReaction(id: String!): Post!
 }
 
-"""The `Upload` scalar type represents a file upload."""
-scalar Upload
+type Post {
+  _id: ID!
+  authorId: User!
+  body: String!
+  createdAt: Float!
+  reactions: [User!]!
+  replyTo: Post
+  tags: [String!]!
+  title: String
+  updatedAt: Float!
+}
+
+type PostDataReturnDto {
+  data: [Post!]!
+  inThisPage: Float!
+  page: Float!
+  total: Float!
+}
+
+type Query {
+  allFiles: [File!]!
+  allPosts(params: FilterInput!): PostDataReturnDto!
+  getComments(id: String!): Post!
+  getOne(id: String!): Post!
+  mePosts(params: FilterInput!): PostDataReturnDto!
+  meQuery: User!
+  myFeed(params: FilterFeedPostInput!): FeedPostDataReturnDto!
+  rotateAccessToken: AuthReturnDto!
+  test: String!
+}
+
+type SubDataReturnDto {
+  authorId: String!
+  authorUsername: String!
+  postId: String!
+}
+
+type Subscription {
+  subNewPosts: SubDataReturnDto!
+}
 
 input UpdatePostInput {
   id: String!
 }
 
-type Subscription {
-  subNewPosts: SubDataReturnDto!
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+type User {
+  _id: ID!
+  createdAt: Float!
+  email: String!
+  followers: [FollowUserDto!]!
+  following: [FollowUserDto!]!
+  lastname: String!
+  name: String!
+  profileImg: File
+  refreshTokenExpiresAt: Float!
+  refreshTokenHash: String!
+  role: roles!
+  updatedAt: Float!
+  username: String!
+}
+
+"""Indicates the user role"""
+enum roles {
+  ADMIN
+  USER
 }

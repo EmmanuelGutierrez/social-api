@@ -29,7 +29,8 @@ export class FeedPostService {
   // }
 
   async findAll(params: FilterFeedPostInput, userId: string) {
-    const { limit = 10, cursorDate = new Date().getTime() / 1000 } = params;
+    const { limit = 10, cursorDate = Math.floor(new Date().getTime() / 1000) } =
+      params;
     const query: RootFilterQuery<FeedPost> = {
       userId: userId,
       createdAt: { $lt: cursorDate },

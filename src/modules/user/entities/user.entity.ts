@@ -3,6 +3,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { roles } from 'src/common/enum/roles.enum';
 import { FollowUserDto } from '../dto/user-follow.dto';
+import { File } from 'src/modules/file/entities/file.entity';
 
 @ObjectType()
 @Schema({ timestamps: true })
@@ -26,6 +27,10 @@ export class User extends Document {
   @Prop({ type: String, required: true, unique: true })
   email: string;
 
+  @Field(() => File, { nullable: true })
+  @Prop({ type: Types.ObjectId, ref: File.name })
+  profileImg?: File;
+
   // @Field(() => String)
   @Prop({
     type: String,
@@ -35,13 +40,18 @@ export class User extends Document {
   })
   password: string;
 
-  @Field(() => String)
-  @Prop({ type: String, required: true, default: roles.USER })
+  @Field(() => roles)
+  @Prop({ type: String, enum: roles, required: true, default: roles.USER })
   role: roles;
 
   @Field(() => String)
   @Prop({ type: String })
   refreshTokenHash?: string;
+
+  @Field(() => Number)
+  @Prop({ type: Number })
+  refreshTokenExpiresAt: number;
+
   @Field(() => [FollowUserDto])
   @Prop({
     type: [
@@ -65,6 +75,14 @@ export class User extends Document {
     default: [],
   })
   followers: Types.Array<{ followDate: number; user: User }>;
+
+  @Field(() => Number)
+  @Prop({ type: Number })
+  createdAt: number;
+
+  @Field(() => Number)
+  @Prop({ type: Number })
+  updatedAt: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

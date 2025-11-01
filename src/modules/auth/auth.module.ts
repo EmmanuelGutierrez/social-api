@@ -6,8 +6,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../user/user.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { config, configType } from 'src/common/config/config';
+import { AuthController } from './auth.controller';
 
 @Module({
+  controllers: [AuthController],
   imports: [
     // JwtModule.register({
     //   secret: process.env.JWT_SECRET,

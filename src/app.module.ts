@@ -54,6 +54,7 @@ import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
           },
           autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
           playground: false,
+          sortSchema: true,
           // buildSchemaOptions: {
           //   scalarsMap:[{type:}]
           // },
