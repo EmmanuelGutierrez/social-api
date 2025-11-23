@@ -17,12 +17,15 @@ import { RedisPubSubService } from '../redis-pub-sub/redis-pub-sub.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { tokenInfoI } from 'src/common/interfaces/token.interface';
 
-import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
-import { FileUpload } from 'graphql-upload/processRequest.mjs';
+// import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+// import { FileUpload } from 'graphql-upload/processRequest.mjs';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { IsSubscription } from 'src/common/decorators/isSubscription.decorator';
 import { SubDataReturnDto } from './dto/sub-data-return.dto';
+import { UploadInputArray } from '../file/dto/file-upload.dto';
+import { FilterFeedPostInput } from './feed-post/dto/filter.input';
+import { MyFeedPostDataReturnDto } from './dto/my-feed-post-data-return.dto';
 
 @UseGuards(JwtAuthGuard)
 @Resolver(() => Post)
@@ -61,14 +64,21 @@ export class PostResolver {
   create(
     @Args('data') data: CreatePostInput,
     @Context() ctx: GraphQLContext,
-    @Args('files', { type: () => [GraphQLUpload], nullable: true })
-    files?: Promise<FileUpload>[],
+    @Args('files') files?: UploadInputArray,
   ) {
     return this.postService.createWithFilesGraphQL(
       data,
       ctx.req.user.id,
-      files,
+      files.files,
     );
+  }
+
+  @Query(() => MyFeedPostDataReturnDto, { name: 'myFeed' })
+  myFeed(
+    @Args('params') params: FilterFeedPostInput,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return this.postService.myFeed(params, tokenData.id);
   }
 
   @Query(() => PostDataReturnDto, { name: 'allPosts' })
@@ -98,7 +108,7 @@ export class PostResolver {
     return this.redisPubSub.asyncIterator(`SUB_NEW_POSTS-${tokenData.id}`);
   }
 
-  @Query(() => PostDataReturnDto, { name: 'mePosts' })
+  @Query(() => PostDataReturnDto, { name: 'myPosts' })
   findMe(
     @Args('params') params: FilterInput,
     @CurrentUser() tokenData: tokenInfoI,
@@ -118,12 +128,15 @@ export class PostResolver {
   ) {
     return this.postService.update(data, tokenData.id);
   }
-  @Mutation(() => Post, { name: 'updateReaction' })
-  async updateReactions(
+  @Mutation(() => Post, { name: 'reactPost' })
+  async reactPosts(
     @Args('id') id: string,
     @CurrentUser() tokenData: tokenInfoI,
   ) {
-    return await this.postService.updateReactions(id, tokenData.id);
+    return await this.postService.reactPost({
+      postId: id,
+      userId: tokenData.id,
+    });
   }
 
   // @Mutation(() => Post, { name: 'comment' })

@@ -1,6 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { File } from 'src/modules/file/entities/file.entity';
 // import { postTypes } from 'src/common/constants/post-types.enum';
 // import { File } from 'src/modules/file/entities/file.entity';
 import { User } from 'src/modules/user/entities/user.entity';
@@ -23,13 +24,12 @@ export class Post extends Document {
   @Prop({ type: String, required: true })
   body: string;
 
-  @Field(() => [User])
+  @Field(() => Number)
   @Prop({
-    type: Types.ObjectId,
-    ref: User.name,
-    default: [],
+    type: Number,
+    default: 0,
   })
-  reactions: Types.Array<User>;
+  reactionsCount: number;
 
   // @Field(() => [Post])
   // @Prop({
@@ -51,9 +51,9 @@ export class Post extends Document {
   @Prop({ type: [String] })
   images: string[]; */
 
-  // @Field(() => [File], { nullable: true })
-  // @Prop({ type: [Types.ObjectId], ref: File.name })
-  // images?: File[] | Types.ObjectId[];
+  @Field(() => [File], { nullable: true })
+  @Prop({ type: [Types.ObjectId], ref: File.name })
+  images?: File[] | Types.ObjectId[];
 
   @Field(() => User)
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })

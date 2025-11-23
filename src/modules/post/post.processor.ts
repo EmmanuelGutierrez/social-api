@@ -17,13 +17,26 @@ class PostProcessor extends WorkerHost {
     console.log(job, token);
     switch (job.name) {
       case 'addToFeed':
-        const { data } = job;
+        const {
+          data,
+        }: {
+          data: {
+            postId: string;
+            authorId: string;
+            authorUsername: string;
+            followerId: string;
+          };
+        } = job;
         await this.redisPubSub.publish(`SUB_NEW_POSTS-${data.followerId}`, {
           [SUB_NEW_POSTS]: {
             postId: data.postId,
             authorId: data.authorId,
             authorUsername: data.authorUsername,
           },
+        });
+        await this.feedPostService.create({
+          postId: data.postId,
+          userId: data.followerId,
         });
         break;
 

@@ -17,18 +17,22 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { feedPostQueueName } from 'src/common/constants/bull/feedPost';
 import { Queue } from 'bullmq';
 import { UserService } from '../user/user.service';
-
+import { ReactionService } from './reaction/reaction.service';
+import { ReactionInput } from './reaction/dto/reaction.input';
+import { FilterFeedPostInput } from './feed-post/dto/filter.input';
+import { MyFeedPostDataReturnDto } from './dto/my-feed-post-data-return.dto';
 @Injectable()
 export class PostService {
   constructor(
     @InjectModel(Post.name)
-    private postModel: Model<Post>,
-    private fileService: FileService,
-    private redisPubSub: RedisPubSubService,
-    private feedPostService: FeedPostService,
-    private userService: UserService,
+    private readonly postModel: Model<Post>,
+    private readonly fileService: FileService,
+    private readonly redisPubSub: RedisPubSubService,
+    private readonly feedPostService: FeedPostService,
+    private readonly userService: UserService,
+    private readonly reactionService: ReactionService,
     @InjectQueue(feedPostQueueName) private postQueue: Queue,
-  ) {}
+  ) { }
   async create(data: CreatePostInput, userId: string) {
     const post = await this.postModel.create({
       ...data,
@@ -71,11 +75,12 @@ export class PostService {
     });
 
     if (filesData) {
-      await this.fileService.createManyGraphql(
+      const files = await this.fileService.createManyGraphql(
         filesData,
         post._id,
         `posts/files/${userId}`,
       );
+      post.images = files;
     }
     // await this.redisPubSub.publish(SUB_NEW_POSTS, {
     //   [SUB_NEW_POSTS]: post,
@@ -178,21 +183,57 @@ export class PostService {
     return updatedPlanificatedMovement;
   }
 
-  async updateReactions(id: string, userId: string) {
-    const post = await this.findOne(id);
-    const existReaction = post.reactions.some((r) => r.id === userId);
+  // async updateReactions(id: string, userId: string) {
+  //   const post = await this.findOne(id);
+  //   const existReaction = post.reactions.some((r) => r.id === userId);
 
+  //   if (existReaction) {
+  //     const res = await this.postModel.findByIdAndUpdate(id, {
+  //       $pull: { reactions: userId },
+  //     });
+  //     return res;
+  //   } else {
+  //     const res = await this.postModel.findByIdAndUpdate(id, {
+  //       $push: { reactions: userId },
+  //     });
+  //     return res;
+  //   }
+  // }
+
+  async reactPost(data: ReactionInput) {
+    const post = await this.findOne(data.postId);
+    const existReaction = await this.reactionService.existReaction(data);
     if (existReaction) {
-      const res = await this.postModel.findByIdAndUpdate(id, {
-        $pull: { reactions: userId },
-      });
-      return res;
+      await this.reactionService.removeReaction(data);
+      post.reactionsCount -= 1;
     } else {
-      const res = await this.postModel.findByIdAndUpdate(id, {
-        $push: { reactions: userId },
-      });
-      return res;
+      await this.reactionService.createReaction(data);
+      post.reactionsCount += 1;
     }
+    await post.save();
+  }
+
+  async myFeed(params: FilterFeedPostInput, userId: string): Promise<MyFeedPostDataReturnDto> {
+    const feedPostsData = await this.feedPostService.findAll(params, userId);
+    const postIds = feedPostsData.data.map((p) => p.postId._id);
+    const likes = await this.reactionService.findReactionsForPosts(
+      userId,
+      postIds,
+    );
+    const likesIds = likes.map((l) => String(l.postId));
+    const feedWithMyLikes = feedPostsData.data.map((feedPost) => {
+      if (likesIds.includes(String(feedPost.postId._id))) {
+        return { post: feedPost.postId, iLiked: true };
+      }
+      return { post: feedPost.postId, iLiked: false };
+    });
+    return {
+      nextCursor: feedPostsData.nextCursor,
+      inThisPage: feedPostsData.inThisPage,
+      inDb: feedPostsData.inDb,
+      hasMore: feedPostsData.hasMore,
+      data: feedWithMyLikes,
+    };
   }
 
   remove(id: number) {

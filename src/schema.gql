@@ -22,20 +22,6 @@ input CreateUserInput {
   username: String!
 }
 
-type FeedPost {
-  createdAt: Float!
-  postId: Post!
-  updatedAt: Float!
-  userId: User!
-}
-
-type FeedPostDataReturnDto {
-  data: [FeedPost!]!
-  inThisPage: Float!
-  page: Float!
-  total: Float!
-}
-
 type File {
   _id: ID!
   asset_id: String
@@ -52,7 +38,7 @@ type File {
 }
 
 input FilterFeedPostInput {
-  cursorDate: Int
+  cursorDate: Float
   limit: Float
   tags: [String!]
 }
@@ -75,12 +61,21 @@ input LoginInput {
 }
 
 type Mutation {
-  createPost(data: CreatePostInput!, files: [Upload!]): Post!
+  createPost(data: CreatePostInput!, files: UploadInputArray!): Post!
   followUser(userToFollowId: String!): Boolean!
   login(loginInput: LoginInput!): AuthReturnDto!
-  register(register: CreateUserInput!): String!
+  logout: Boolean!
+  reactPost(id: String!): Post!
+  register(file: UploadInput!, register: CreateUserInput!): AuthReturnDto!
   updatePost(data: UpdatePostInput!): Post!
-  updateReaction(id: String!): Post!
+}
+
+type MyFeedPostDataReturnDto {
+  data: [PostDataDto!]!
+  hasMore: Boolean!
+  inDb: Float!
+  inThisPage: Float!
+  nextCursor: Float
 }
 
 type Post {
@@ -88,11 +83,17 @@ type Post {
   authorId: User!
   body: String!
   createdAt: Float!
-  reactions: [User!]!
+  images: [File!]
+  reactionsCount: Float!
   replyTo: Post
   tags: [String!]!
   title: String
   updatedAt: Float!
+}
+
+type PostDataDto {
+  iLiked: Boolean!
+  post: Post!
 }
 
 type PostDataReturnDto {
@@ -107,9 +108,9 @@ type Query {
   allPosts(params: FilterInput!): PostDataReturnDto!
   getComments(id: String!): Post!
   getOne(id: String!): Post!
-  mePosts(params: FilterInput!): PostDataReturnDto!
   meQuery: User!
-  myFeed(params: FilterFeedPostInput!): FeedPostDataReturnDto!
+  myFeed(params: FilterFeedPostInput!): MyFeedPostDataReturnDto!
+  myPosts(params: FilterInput!): PostDataReturnDto!
   rotateAccessToken: AuthReturnDto!
   test: String!
 }
@@ -131,6 +132,14 @@ input UpdatePostInput {
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
 
+input UploadInput {
+  file: Upload
+}
+
+input UploadInputArray {
+  files: Upload
+}
+
 type User {
   _id: ID!
   createdAt: Float!
@@ -140,8 +149,6 @@ type User {
   lastname: String!
   name: String!
   profileImg: File
-  refreshTokenExpiresAt: Float!
-  refreshTokenHash: String!
   role: roles!
   updatedAt: Float!
   username: String!

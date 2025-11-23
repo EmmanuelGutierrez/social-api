@@ -11,6 +11,7 @@ import { config, configType } from 'src/common/config/config';
 import { feedPostQueueName } from 'src/common/constants/bull/feedPost';
 import PostProcessor from './post.processor';
 import { UserModule } from '../user/user.module';
+import { ReactionModule } from './reaction/reaction.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { UserModule } from '../user/user.module';
     RedisPubSubModule,
     FeedPostModule,
     UserModule,
+    ReactionModule,
     /* MessageModule, */
   ],
   providers: [PostService, PostResolver, PostProcessor],

@@ -28,7 +28,7 @@ export class User extends Document {
   email: string;
 
   @Field(() => File, { nullable: true })
-  @Prop({ type: Types.ObjectId, ref: File.name })
+  @Prop({ type: Types.ObjectId, ref: File.name, required: false })
   profileImg?: File;
 
   // @Field(() => String)
@@ -44,13 +44,11 @@ export class User extends Document {
   @Prop({ type: String, enum: roles, required: true, default: roles.USER })
   role: roles;
 
-  @Field(() => String)
-  @Prop({ type: String })
+  @Prop({ type: String, select: false })
   refreshTokenHash?: string;
 
-  @Field(() => Number)
-  @Prop({ type: Number })
-  refreshTokenExpiresAt: number;
+  @Prop({ type: Number, select: false })
+  refreshTokenExpiresAt?: number;
 
   @Field(() => [FollowUserDto])
   @Prop({

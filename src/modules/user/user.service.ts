@@ -7,10 +7,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
+import { FileUpload } from 'graphql-upload/processRequest.mjs';
+import { FileService } from '../file/file.service';
+import { File } from '../file/entities/file.entity';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private fileService: FileService,
+  ) {}
 
   async findByEmail(email: string) {
     const res = await this.userModel.findOne({ email });
@@ -28,15 +34,34 @@ export class UserService {
     return res;
   }
 
+  async findByIdWithTokens(id: string) {
+    const user = await this.userModel
+      .findById(id)
+      .select(['+password', '+refreshTokenHash', '+refreshTokenExpiresAt']);
+    if (!user) {
+      throw new NotFoundException('not found');
+    }
+    return user;
+  }
+
   async findById(id: string) {
     const user = await this.userModel.findById(id).populate([
       {
         path: 'following.user',
         model: User.name,
+        populate: {
+          path: 'profileImg',
+          model: File.name,
+        },
       },
       {
         path: 'followers.user',
         model: User.name,
+        populate: { path: 'profileImg', model: File.name },
+      },
+      {
+        path: 'profileImg',
+        model: File.name,
       },
     ]);
     if (!user) {
@@ -46,7 +71,6 @@ export class UserService {
   }
 
   async followUser(userId: string, userToFollowId: string) {
-    console.log(userId, userToFollowId);
     if (userId === userToFollowId) {
       throw new BadRequestException('same user');
     }
@@ -67,7 +91,7 @@ export class UserService {
       await userToFollow.save();
       return true;
     } else {
-      const dateNow = Math.floor(new Date().getTime() / 1000);
+      const dateNow = new Date().getTime();
 
       const res = await this.userModel.bulkWrite([
         {
@@ -103,8 +127,16 @@ export class UserService {
     return true;
   }
 
-  async createUser(data: CreateUserInput) {
+  async createUser(data: CreateUserInput, filesData?: FileUpload) {
     const user = new this.userModel(data);
+    if (filesData) {
+      const file = await this.fileService.createGraphQL(
+        Promise.resolve(filesData),
+        user._id,
+        `users/files/profile/${user._id}`,
+      );
+      user.profileImg = file;
+    }
     return user.save();
   }
 

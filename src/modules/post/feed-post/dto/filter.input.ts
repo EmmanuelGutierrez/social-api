@@ -14,7 +14,7 @@ export class FilterFeedPostInput {
   // @Min(0)
   // page?: number;
 
-  @Field(() => Int, { nullable: true })
+  @Field(() => Number, { nullable: true })
   @IsOptional()
   @IsNumber()
   @Min(0)

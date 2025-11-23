@@ -6,6 +6,9 @@ import { FeedPost } from './entities/feed-post.entity';
 import { Model, RootFilterQuery } from 'mongoose';
 import { Post } from '../entities/post.entity';
 import { FilterFeedPostInput } from './dto/filter.input';
+import { User } from 'src/modules/user/entities/user.entity';
+import { FeedPostDataReturnDto } from './dto/feed-post-data-return.dto';
+import { File } from 'src/modules/file/entities/file.entity';
 
 @Injectable()
 export class FeedPostService {
@@ -28,9 +31,11 @@ export class FeedPostService {
   //   return feedPosts;
   // }
 
-  async findAll(params: FilterFeedPostInput, userId: string) {
-    const { limit = 10, cursorDate = Math.floor(new Date().getTime() / 1000) } =
-      params;
+  async findAll(
+    params: FilterFeedPostInput,
+    userId: string,
+  ): Promise<FeedPostDataReturnDto> {
+    const { limit = 10, cursorDate = new Date().getTime() } = params;
     const query: RootFilterQuery<FeedPost> = {
       userId: userId,
       createdAt: { $lt: cursorDate },
@@ -39,10 +44,30 @@ export class FeedPostService {
       .find(query)
       .sort({ createdAt: -1 })
       // .skip((page - 1) * limit)
-      .limit(limit)
-      .populate([{ path: 'postId', model: Post.name }]);
+      .limit(limit + 1)
+      .populate([
+        {
+          path: 'postId',
+          model: Post.name,
+          populate: {
+            path: 'authorId',
+            model: User.name,
+            populate: { path: 'profileImg', model: File.name },
+          },
+        },
+        ,
+      ]);
 
-    const total = await this.feedPostModel.countDocuments();
-    return { inThisPage: posts.length, total, data: posts };
+    const total = await this.feedPostModel.countDocuments({ userId });
+    const hasMore = posts.length > limit;
+    const data = hasMore ? posts.slice(0, limit) : posts;
+    const nextCursor = hasMore ? posts[posts.length - 1].createdAt + 1 : null;
+    return {
+      inThisPage: posts.length,
+      hasMore,
+      inDb: total,
+      nextCursor,
+      data,
+    };
   }
 }

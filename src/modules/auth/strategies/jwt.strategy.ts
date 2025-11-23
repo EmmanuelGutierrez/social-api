@@ -11,7 +11,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
-          console.log('COOKIS', req.cookies);
           return req?.cookies?.access_token;
         },
       ]),
@@ -20,7 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<tokenInfoI> {
-    console.log('validate');
     return {
       id: payload.id,
       email: payload.email,

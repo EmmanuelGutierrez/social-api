@@ -96,7 +96,7 @@ export class FileService {
       return this.createGraphQL(file, external_id, folder, type);
     });
 
-    const resProm = await Promise.allSettled(filesToUpload);
+    const resProm = await Promise.all(filesToUpload);
     return resProm;
   }
 }

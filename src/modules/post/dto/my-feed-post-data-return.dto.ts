@@ -1,8 +1,17 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
-import { FeedPost } from '../entities/feed-post.entity';
+import { Post } from '../entities/post.entity';
 
 @ObjectType()
-export class FeedPostDataReturnDto {
+class PostDataDto {
+  @Field(() => Post)
+  post: Post
+
+  @Field(()=>Boolean)
+  iLiked: boolean;
+}
+
+@ObjectType()
+export class MyFeedPostDataReturnDto {
   // @Field(() => Number)
   // page: number;
 
@@ -18,6 +27,6 @@ export class FeedPostDataReturnDto {
   @Field(() => Boolean)
   hasMore: boolean;
 
-  @Field(() => [FeedPost])
-  data: FeedPost[];
+  @Field(() => [PostDataDto])
+  data: PostDataDto[];
 }

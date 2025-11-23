@@ -8,6 +8,7 @@ import { tokenInfoI } from 'src/common/interfaces/token.interface';
 import { User } from '../user/entities/user.entity';
 import { config, configType } from 'src/common/config/config';
 import { tokenType } from 'src/common/enum/tokenType.enum';
+import { FileUpload } from 'graphql-upload/processRequest.mjs';
 
 @Injectable()
 export class AuthService {
@@ -22,9 +23,9 @@ export class AuthService {
     this.wsJwt = new JwtService({ secret: this.configService.api.wsJwtSecret });
   }
 
-  async register({ password, ...data }: CreateUserInput) {
+  async register({ password, ...data }: CreateUserInput, file?: FileUpload) {
     const hash: string = await bcrypt.hash(password, 12);
-    return this.userService.createUser({ ...data, password: hash });
+    return this.userService.createUser({ ...data, password: hash }, file);
   }
 
   async validateUser(email: string, password: string) {
@@ -67,7 +68,7 @@ export class AuthService {
     const refreshTokenHash = await bcrypt.hash(refreshToken, 12);
 
     const refreshTokenExpiresAt =
-      Math.floor(new Date().getTime() / 1000) + 7 * 24 * 60 * 60;
+      new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
 
     await this.userService.setRefreshTokenHash(userId, {
       refreshTokenHash,
@@ -84,7 +85,7 @@ export class AuthService {
   }
 
   async rotateRefreshToken(userId: string, token: string) {
-    const user = await this.userService.findById(userId);
+    const user = await this.userService.findByIdWithTokens(userId);
     if (!user || !user.refreshTokenHash) throw new UnauthorizedException();
     const valid = await bcrypt.compare(token, user.refreshTokenHash);
     if (!valid) {
@@ -96,7 +97,7 @@ export class AuthService {
   }
 
   async rotateAccessToken(userId: string, token: string) {
-    const user = await this.userService.findById(userId);
+    const user = await this.userService.findByIdWithTokens(userId);
     if (!user || !user.refreshTokenHash) throw new UnauthorizedException();
     await this.validateRefreshToken(user, token);
     const newToken = await this.signAccessToken(user);
@@ -104,17 +105,27 @@ export class AuthService {
     return { newToken, newTokenWS };
   }
 
+  async clearRefreshToken(userId: string) {
+    await this.userService.setRefreshTokenHash(userId, {
+      refreshTokenHash: null,
+      refreshTokenExpiresAt: null,
+    });
+  }
+
   async validateRefreshToken(user: User, token: string) {
     // const user = await this.userService.findById(userId);
 
-    if (!user.refreshTokenHash || !user.refreshTokenExpiresAt)
+    if (!user.refreshTokenHash || !user.refreshTokenExpiresAt) {
       throw new UnauthorizedException('No refresh token');
+    }
+    console.log('TOKEN', token);
+    console.log(' refresh TOKEN', user.refreshTokenHash);
     const isValid = await bcrypt.compare(token, user.refreshTokenHash);
     if (!isValid) {
       // await this.userService.setRefreshTokenHash(userId, null);
       throw new UnauthorizedException('Invalid token');
     }
-    if (user.refreshTokenExpiresAt < Math.floor(new Date().getTime() / 1000))
+    if (user.refreshTokenExpiresAt < new Date().getTime())
       throw new UnauthorizedException('Token expired');
 
     return user;

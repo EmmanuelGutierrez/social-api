@@ -4,39 +4,27 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthGuard, IAuthGuard } from '@nestjs/passport';
-import { IS_SUBSCRIPTION_KEY } from 'src/common/decorators/isSubscription.decorator';
 import { IS_PUBLIC_KEY } from 'src/common/decorators/public.decorator';
-import { tokenType } from 'src/common/enum/tokenType.enum';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') implements IAuthGuard {
+export class JwtExpressAuthGuard
+  extends AuthGuard('jwt')
+  implements IAuthGuard
+{
   constructor(private reflector: Reflector) {
     super();
   }
-
-  getRequest(context: ExecutionContext) {
-    const ctx = GqlExecutionContext.create(context);
-    const request = ctx.getContext().req;
-
-    return request;
-  }
-
   async canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.get(IS_PUBLIC_KEY, context.getHandler());
-    const isSub = this.reflector.get(IS_SUBSCRIPTION_KEY, context.getHandler());
-    if (isPublic || isSub) {
-      return true;
-    }
+
+    if (isPublic) return true;
+
     await super.canActivate(context);
-    const ctx = GqlExecutionContext.create(context);
 
-    const request = ctx.getContext().req;
-    const { user } = request;
+    const { user } = context.switchToHttp().getRequest();
 
-    if (!user || user.type !== tokenType.AUTH)
-      throw new UnauthorizedException('no auth');
+    if (!user) throw new UnauthorizedException('Unauthorizedd');
 
     return user ? true : false;
   }
