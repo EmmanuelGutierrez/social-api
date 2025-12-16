@@ -40,9 +40,20 @@ export class ReactionService {
     userId: string,
     postIds: string[],
   ): Promise<Reaction[]> {
-    return this.reactionModel.find({
+    const reactions = await this.reactionModel.find({
       userId,
       postId: { $in: postIds },
     });
+    return reactions;
+  }
+
+  async upsertReaction(data: ReactionInput) {
+    const reaction = await this.reactionModel.updateOne(
+      data,
+      { $setOnInsert: data },
+      { upsert: true },
+    );
+
+    return reaction;
   }
 }

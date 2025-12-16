@@ -18,6 +18,8 @@ import { AuthService } from './modules/auth/auth.service';
 import { contextGraphqlWs } from './common/interfaces/context-graphql-ws';
 import { toLowerCaseKeys } from './common/utils/toLowerCaseKeys';
 import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
+import { RedisModule } from './modules/redis/redis.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     // MongooseModule.forRoot(
@@ -37,7 +39,6 @@ import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
                 const { extra, connectionParams } = ctx;
                 const AuthorizationObj: { authorization?: string } =
                   toLowerCaseKeys(connectionParams);
-                console.log('AuthorizationObj', AuthorizationObj);
                 if (!AuthorizationObj.authorization) {
                   throw new UnauthorizedException('No token auth');
                 }
@@ -92,12 +93,14 @@ import { CloudinaryModule } from './modules/file/cloudinary/cloudinary.module';
       }),
     }),
     ThrottlerModule.forRoot({ throttlers: [{ ttl: 60, limit: 20 }] }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     PostModule,
     FileModule,
     RedisPubSubModule,
     CloudinaryModule,
+    RedisModule,
   ],
 })
 export class AppModule {}

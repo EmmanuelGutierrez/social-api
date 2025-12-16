@@ -5,10 +5,15 @@ import { CreateUserInput } from '../user/dto/create-user.input';
 import { AuthReturnDto } from './dto/auth-return.dto';
 import { Request, Response } from 'express';
 import { UploadInput } from '../file/dto/file-upload.dto';
+import { config, configType } from 'src/common/config/config';
+import { Inject } from '@nestjs/common';
 
 @Resolver()
 export class AuthResolver {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    @Inject(config.KEY) private configService: configType,
+  ) {}
 
   @Mutation(() => AuthReturnDto)
   async register(
@@ -22,11 +27,13 @@ export class AuthResolver {
     const wsToken = await this.auth.signAccessTokenWS(user);
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'none',
+      secure: true,
     });
     ctx.res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'none',
+      secure: true,
     });
 
     return { tokenWs: wsToken };
@@ -34,36 +41,44 @@ export class AuthResolver {
 
   @Mutation(() => AuthReturnDto)
   async login(@Args('loginInput') data: LoginInput, @Context() ctx) {
+    console.log('prod', this.configService.api.env === 'production');
     const user = await this.auth.validateUser(data.email, data.password);
     const accessToken = await this.auth.signAccessToken(user);
     const refreshToken = await this.auth.createRefreshTokenForUser(user._id);
     const wsToken = await this.auth.signAccessTokenWS(user);
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'none',
+      secure: true,
+      // maxAge: 60 * 60 * 1000,
+      // path: '/',
     });
     ctx.res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'none',
+      secure: true,
+      // maxAge: 60 * 60 * 1000 * 7 * 24,
+      // path: '/',
     });
 
     return { tokenWs: wsToken };
   }
 
-  @Query(() => AuthReturnDto, { name: 'rotateAccessToken' })
+  @Mutation(() => AuthReturnDto, { name: 'rotateAccessToken' })
   async rotateAccessToken(@Context() ctx) {
     try {
       const decodeToken = this.auth.decodeToken(
         ctx.req.cookies.access_token as string,
       );
-      console.log('REFRESh', decodeToken, ctx.req.cookies.access_token);
+      console.log('REFRESh');
       const newTokens = await this.auth.rotateAccessToken(
         decodeToken.id,
         ctx.req.cookies.refresh_token as string,
       );
       ctx.res.cookie('access_token', newTokens.newToken, {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'none',
+        secure: true,
       });
       console.log('REFRESh end');
       return { tokenWs: newTokens.newTokenWS };
@@ -77,6 +92,7 @@ export class AuthResolver {
       const decodeToken = this.auth.decodeToken(
         ctx.req.cookies.access_token as string,
       );
+      console.log('decodeToken', decodeToken);
       await this.auth.clearRefreshToken(decodeToken.id);
       ctx.res.clearCookie('access_token', {
         httpOnly: true,

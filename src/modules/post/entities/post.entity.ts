@@ -7,10 +7,18 @@ import { File } from 'src/modules/file/entities/file.entity';
 import { User } from 'src/modules/user/entities/user.entity';
 
 @ObjectType()
-@Schema({ timestamps: { createdAt: true, updatedAt: true } })
+@Schema({
+  timestamps: { createdAt: true, updatedAt: true },
+  virtuals: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
 export class Post extends Document {
   @Field(() => ID)
   _id: string;
+
+  @Field(() => String)
+  id: string;
 
   // @Field(() => postTypes)
   // @Prop({ type: String, enum: postTypes, default: postTypes.POST })
@@ -66,7 +74,18 @@ export class Post extends Document {
   @Field(() => Number)
   @Prop({ type: Number })
   updatedAt: number;
+
+  @Field(() => [Post], { nullable: true })
+  comments?: Post[];
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
-PostSchema.index({ createdAt: -1, userId: 1 });
+PostSchema.index({ createdAt: -1, authorId: 1 });
+PostSchema.virtual('comments', {
+  ref: Post.name,
+  localField: '_id',
+  foreignField: 'replyTo',
+});
+
+PostSchema.set('toJSON', { virtuals: true });
+PostSchema.set('toObject', { virtuals: true });

@@ -14,7 +14,8 @@ class PostProcessor extends WorkerHost {
     super();
   }
   async process(job: Job, token?: string): Promise<any> {
-    console.log(job, token);
+    // console.log(job, token);
+    //!! TODO: Job para sincronizar contadores con la base de datos
     switch (job.name) {
       case 'addToFeed':
         const {
@@ -24,6 +25,7 @@ class PostProcessor extends WorkerHost {
             postId: string;
             authorId: string;
             authorUsername: string;
+            authorProfileImg: string;
             followerId: string;
           };
         } = job;
@@ -32,12 +34,14 @@ class PostProcessor extends WorkerHost {
             postId: data.postId,
             authorId: data.authorId,
             authorUsername: data.authorUsername,
+            authorProfileImg: data.authorProfileImg,
           },
         });
         await this.feedPostService.create({
           postId: data.postId,
           userId: data.followerId,
         });
+
         break;
 
       default:

@@ -8,4 +8,6 @@ export class SubDataReturnDto {
   authorId: string;
   @Field(() => String)
   authorUsername: string;
+  @Field(() => String, { nullable: true })
+  authorProfileImg?: string;
 }

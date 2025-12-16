@@ -35,10 +35,11 @@ export class FeedPostService {
     params: FilterFeedPostInput,
     userId: string,
   ): Promise<FeedPostDataReturnDto> {
-    const { limit = 10, cursorDate = new Date().getTime() } = params;
+    const { limit = 10, cursorDate } = params;
+    console.log('cursorDate', cursorDate);
     const query: RootFilterQuery<FeedPost> = {
       userId: userId,
-      createdAt: { $lt: cursorDate },
+      createdAt: { $lt: cursorDate || new Date().getTime() },
     };
     const posts = await this.feedPostModel
       .find(query)
@@ -49,11 +50,24 @@ export class FeedPostService {
         {
           path: 'postId',
           model: Post.name,
-          populate: {
-            path: 'authorId',
-            model: User.name,
-            populate: { path: 'profileImg', model: File.name },
-          },
+          populate: [
+            {
+              path: 'authorId',
+              model: User.name,
+              populate: { path: 'profileImg', model: File.name },
+            },
+            {
+              path: 'replyTo',
+              model: Post.name,
+              populate: [
+                {
+                  path: 'authorId',
+                  model: User.name,
+                  populate: { path: 'profileImg', model: File.name },
+                },
+              ],
+            },
+          ],
         },
         ,
       ]);

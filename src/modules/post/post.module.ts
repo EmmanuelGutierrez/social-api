@@ -12,6 +12,7 @@ import { feedPostQueueName } from 'src/common/constants/bull/feedPost';
 import PostProcessor from './post.processor';
 import { UserModule } from '../user/user.module';
 import { ReactionModule } from './reaction/reaction.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ReactionModule } from './reaction/reaction.module';
     FeedPostModule,
     UserModule,
     ReactionModule,
+    RedisModule,
     /* MessageModule, */
   ],
   providers: [PostService, PostResolver, PostProcessor],

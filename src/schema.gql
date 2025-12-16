@@ -6,6 +6,12 @@ type AuthReturnDto {
   tokenWs: String!
 }
 
+type CommentsReturnDto {
+  data: [OnePostReturnDto!]!
+  hasMore: Boolean!
+  nextCursor: String
+}
+
 input CreatePostInput {
   body: String!
   replyTo: String
@@ -61,28 +67,42 @@ input LoginInput {
 }
 
 type Mutation {
-  createPost(data: CreatePostInput!, files: UploadInputArray!): Post!
+  createPost(data: CreatePostInput!, files: [Upload!]!): Post!
+  dislikePost(id: String!): RactPostReturnDto!
   followUser(userToFollowId: String!): Boolean!
+  likePost(id: String!): RactPostReturnDto!
   login(loginInput: LoginInput!): AuthReturnDto!
   logout: Boolean!
-  reactPost(id: String!): Post!
   register(file: UploadInput!, register: CreateUserInput!): AuthReturnDto!
+  rotateAccessToken: AuthReturnDto!
   updatePost(data: UpdatePostInput!): Post!
 }
 
 type MyFeedPostDataReturnDto {
-  data: [PostDataDto!]!
+  data: [OnePostReturnDto!]!
   hasMore: Boolean!
-  inDb: Float!
-  inThisPage: Float!
   nextCursor: Float
+}
+
+type OnePostReturnDto {
+  iLiked: Boolean!
+  likeCount: Float!
+  post: Post!
+  replyCount: Float!
+}
+
+type OnlyAllComments {
+  ancestors: CommentsReturnDto!
+  replies: CommentsReturnDto!
 }
 
 type Post {
   _id: ID!
   authorId: User!
   body: String!
+  comments: [Post!]
   createdAt: Float!
+  id: String!
   images: [File!]
   reactionsCount: Float!
   replyTo: Post
@@ -91,9 +111,10 @@ type Post {
   updatedAt: Float!
 }
 
-type PostDataDto {
-  iLiked: Boolean!
-  post: Post!
+type PostAndAllComments {
+  ancestors: CommentsReturnDto!
+  post: OnePostReturnDto!
+  replies: CommentsReturnDto!
 }
 
 type PostDataReturnDto {
@@ -106,17 +127,26 @@ type PostDataReturnDto {
 type Query {
   allFiles: [File!]!
   allPosts(params: FilterInput!): PostDataReturnDto!
-  getComments(id: String!): Post!
-  getOne(id: String!): Post!
+  getAllComments(postId: String!): OnlyAllComments!
+  getAncestorsComments(postId: String!): CommentsReturnDto!
+  getComments(cursor: String, postId: String!): CommentsReturnDto!
+  getLikesCount(postId: String!): Int!
+  getOne(id: String!): OnePostReturnDto!
+  getPostsByIds(postsIds: [String!]!): [OnePostReturnDto!]!
   meQuery: User!
   myFeed(params: FilterFeedPostInput!): MyFeedPostDataReturnDto!
-  myPosts(params: FilterInput!): PostDataReturnDto!
-  rotateAccessToken: AuthReturnDto!
+  postAndAllComments(postId: String!): PostAndAllComments!
   test: String!
+}
+
+type RactPostReturnDto {
+  ignored: Boolean!
+  likedCount: Float!
 }
 
 type SubDataReturnDto {
   authorId: String!
+  authorProfileImg: String
   authorUsername: String!
   postId: String!
 }
@@ -134,10 +164,6 @@ scalar Upload
 
 input UploadInput {
   file: Upload
-}
-
-input UploadInputArray {
-  files: Upload
 }
 
 type User {

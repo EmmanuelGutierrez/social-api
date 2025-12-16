@@ -18,7 +18,7 @@ export class FilterFeedPostInput {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  cursorDate?: number;
+  cursorDate?: number | null;
 
   @Field(() => [String], { nullable: true })
   @IsOptional()

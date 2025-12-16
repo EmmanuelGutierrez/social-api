@@ -33,8 +33,29 @@ async function bootstrap() {
   );
   app.use(cookieParser());
 
+  const allowedOrigins = [
+    process.env.FRONT_URL,
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://c981d626e4e3.ngrok-free.app',
+  ];
+
   app.enableCors({
-    origin: process.env.FRONT_URL || 'http://localhost:3000',
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, result?: boolean) => void,
+    ) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.ngrok-free.app')
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   });
 
@@ -62,7 +83,7 @@ async function bootstrap() {
       },
     }),
   );
-  // app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const configSwagger = new DocumentBuilder()
     .setTitle('Monotributo Recurrente')
