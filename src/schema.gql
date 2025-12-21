@@ -50,15 +50,19 @@ input FilterFeedPostInput {
 }
 
 input FilterInput {
+  authorId: String
+  cursorDate: Float
   limit: Float
-  page: Float
+  onlyMultimedia: Boolean
   tags: [String!]
+  username: String
 }
 
-type FollowUserDto {
-  _id: ID!
-  followDate: Float!
-  user: User!
+type Follow {
+  createdAt: Float!
+  follower: User!
+  following: User!
+  updatedAt: Float!
 }
 
 input LoginInput {
@@ -73,8 +77,9 @@ type Mutation {
   likePost(id: String!): RactPostReturnDto!
   login(loginInput: LoginInput!): AuthReturnDto!
   logout: Boolean!
-  register(file: UploadInput!, register: CreateUserInput!): AuthReturnDto!
+  register(file: Upload!, register: CreateUserInput!): AuthReturnDto!
   rotateAccessToken: AuthReturnDto!
+  unfollowUser(userToUnfollowId: String!): Boolean!
   updatePost(data: UpdatePostInput!): Post!
 }
 
@@ -117,26 +122,26 @@ type PostAndAllComments {
   replies: CommentsReturnDto!
 }
 
-type PostDataReturnDto {
-  data: [Post!]!
-  inThisPage: Float!
-  page: Float!
-  total: Float!
-}
-
 type Query {
   allFiles: [File!]!
-  allPosts(params: FilterInput!): PostDataReturnDto!
   getAllComments(postId: String!): OnlyAllComments!
   getAncestorsComments(postId: String!): CommentsReturnDto!
   getComments(cursor: String, postId: String!): CommentsReturnDto!
+  getFollowCount(userId: String!): Int!
+  getFollowerCount(userId: String!): Int!
+  getFollowers(cursor: String!, limit: Float!, userId: String!): Follow!
+  getFollowing(cursor: String!, limit: Float!, userId: String!): Follow!
   getLikesCount(postId: String!): Int!
   getOne(id: String!): OnePostReturnDto!
   getPostsByIds(postsIds: [String!]!): [OnePostReturnDto!]!
+  likedPosts(params: FilterInput!): MyFeedPostDataReturnDto!
   meQuery: User!
   myFeed(params: FilterFeedPostInput!): MyFeedPostDataReturnDto!
   postAndAllComments(postId: String!): PostAndAllComments!
+  suggestedUsers: [User!]!
   test: String!
+  userByUsername(username: String!): UserDataReturnDto!
+  userPosts(params: FilterInput!): MyFeedPostDataReturnDto!
 }
 
 type RactPostReturnDto {
@@ -162,22 +167,26 @@ input UpdatePostInput {
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
 
-input UploadInput {
-  file: Upload
-}
-
 type User {
   _id: ID!
+  bio: String
   createdAt: Float!
   email: String!
-  followers: [FollowUserDto!]!
-  following: [FollowUserDto!]!
+  followers: [Follow!]
+  followersCount: Float!
+  following: [Follow!]
+  followingCount: Float!
   lastname: String!
   name: String!
   profileImg: File
   role: roles!
   updatedAt: Float!
   username: String!
+}
+
+type UserDataReturnDto {
+  isFollowing: Boolean!
+  user: User!
 }
 
 """Indicates the user role"""

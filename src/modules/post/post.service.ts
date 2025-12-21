@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -6,7 +7,7 @@ import {
 import { CreatePostInput } from './dto/create-post.input';
 import { UpdatePostInput } from './dto/update-post.input';
 import { Post } from './entities/post.entity';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { FilterQuery, Model, RootFilterQuery, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterInput } from './dto/filter.input';
 import { User } from '../user/entities/user.entity';
@@ -29,6 +30,8 @@ import { RedisService } from '../redis/redis.service';
 import { RactPostReturnDto } from './dto/react-post-return.dto';
 import { OnePostReturnDto } from './dto/one-post-return.dto';
 import { CommentsReturnDto } from './dto/comments-return.dto';
+import { FollowService } from '../user/follow/follow.service';
+import { PostDataReturnDto } from './dto/post-data-return.dto';
 
 @Injectable()
 export class PostService {
@@ -42,6 +45,7 @@ export class PostService {
     private readonly reactionService: ReactionService,
     private readonly redisService: RedisService,
     @InjectQueue(feedPostQueueName) private postQueue: Queue,
+    private readonly followService: FollowService,
   ) {}
 
   private likeCountKey(postId: string) {
@@ -76,12 +80,11 @@ export class PostService {
       authorId: userId,
     });
 
-    const files = await this.fileService.createMany(
+    await this.fileService.createMany(
       filesData,
       post._id,
       `posts/files/${userId}`,
     );
-    console.log(files);
     return post;
   }
 
@@ -134,6 +137,10 @@ export class PostService {
               },
             ],
           },
+          {
+            path: 'images',
+            model: File.name,
+          },
         ],
       });
     }
@@ -144,7 +151,8 @@ export class PostService {
         post._id,
         `posts/files/${userId}`,
       );
-      post.images = files;
+      post.images = files.map((file) => file._id);
+      await post.save();
     }
     // await this.redisPubSub.publish(SUB_NEW_POSTS, {
     //   [SUB_NEW_POSTS]: post,
@@ -153,33 +161,184 @@ export class PostService {
       postId: post._id,
       userId: userId,
     });
+    // const followers = await this.followService.getFollowers(userId);
     for (const follower of user.followers) {
       await this.postQueue.add('addToFeed', {
         postId: post._id,
-        followerId: follower.user._id,
+        followerId: follower.follower._id,
         authorId: userId,
         authorUsername: user.username,
         authorProfileImg: user.profileImg.secure_url,
       });
     }
-    return post;
+    return post.populate([{ path: 'images', model: File.name }]);
   }
 
-  async findAll(params: FilterInput) {
-    const { limit = 10, page = 1 } = params;
+  async postWithUserLikes(posts: Post[], userId: string) {
+    const postIds = posts.map((c) => c.id);
+    const likes = await this.reactionService.findReactionsForPosts(
+      userId,
+      postIds,
+    );
+    const likeCounts = await this.redisService.mget(
+      postIds.map((p) => this.likeCountKey(p)),
+    );
+
+    const likesIds = likes.map((l) => String(l.postId));
+    const postsWithMyLikes: OnePostReturnDto[] = [];
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i];
+      const replyCount = await this.postModel.countDocuments({
+        replyTo: post._id,
+      });
+      if (likesIds.includes(String(post._id))) {
+        postsWithMyLikes.push({
+          post,
+          iLiked: true,
+          likeCount: Number(likeCounts[i]) || 0,
+          replyCount,
+        });
+      } else {
+        postsWithMyLikes.push({
+          post,
+          iLiked: false,
+          likeCount: Number(likeCounts[i]) || 0,
+          replyCount,
+        });
+      }
+    }
+    return postsWithMyLikes;
+  }
+
+  async getLikedPosts(params: FilterInput) {
+    const { limit = 10, cursorDate, username, authorId } = params;
+    let user: User;
+    const query: RootFilterQuery<Post> = {
+      createdAt: { $lt: cursorDate || new Date().getTime() },
+    };
+
+    if (username && !authorId) {
+      const res = await this.userService.findByUsername(username);
+      user = res.user;
+    }
+    if ((authorId && !username) || (authorId && !user)) {
+      user = await this.userService.findById(authorId);
+    }
+
+    const reactions = await this.reactionService.getMyReactions(
+      user._id.toString(),
+    );
+    const reactionsIds = reactions.map((r) => r.postId);
+    query._id = { $in: reactionsIds };
     const posts = await this.postModel
-      .find()
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit + 1)
       .populate([
         {
           path: 'authorId',
           model: User.name,
+          populate: { path: 'profileImg', model: File.name },
+        },
+        {
+          path: 'replyTo',
+          model: Post.name,
+          populate: [
+            {
+              path: 'authorId',
+              model: User.name,
+              populate: { path: 'profileImg', model: File.name },
+            },
+          ],
+        },
+        {
+          path: 'images',
+          model: File.name,
         },
       ]);
 
-    const total = await this.postModel.countDocuments();
-    return { page, inThisPage: posts.length, total, data: posts };
+    const hasMore = posts.length > limit;
+    const data = hasMore ? posts.slice(0, limit) : posts;
+    const nextCursor = hasMore ? posts[posts.length - 1].createdAt + 1 : null;
+    const postsWithMyLikes = await this.postWithUserLikes(data, user._id);
+    return {
+      nextCursor,
+      data: postsWithMyLikes,
+      hasMore,
+    };
+  }
+
+  async findAll(params: FilterInput): Promise<PostDataReturnDto> {
+    const {
+      limit = 10,
+      cursorDate,
+      username,
+      authorId,
+      onlyMultimedia,
+    } = params;
+    let user: User;
+    const query: RootFilterQuery<Post> = {
+      createdAt: { $lt: cursorDate || new Date().getTime() },
+    };
+
+    if (username && !authorId) {
+      const res = await this.userService.findByUsername(username);
+      user = res.user;
+      query.authorId = user._id;
+    }
+    if ((authorId && !username) || (authorId && !user)) {
+      user = await this.userService.findById(authorId);
+      query.authorId = user._id;
+    }
+    if (onlyMultimedia) {
+      query['images.0'] = { $exists: true };
+    }
+    // if ((userLiked && userId) || (userLiked && username)) {
+    //   // query.isLiked = userLiked;
+    //   const likedPosts = await this.reactionService.getMyReactions(user._id);
+    //   query._id = { $in: likedPosts.map((post) => post.postId) };
+    // }
+
+    if (!username && !authorId) {
+      throw new BadRequestException('username or authorId is required');
+    }
+
+    const posts = await this.postModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      // .skip((page - 1) * limit)
+      .limit(limit + 1)
+      .populate([
+        {
+          path: 'authorId',
+          model: User.name,
+          populate: { path: 'profileImg', model: File.name },
+        },
+        {
+          path: 'replyTo',
+          model: Post.name,
+          populate: [
+            {
+              path: 'authorId',
+              model: User.name,
+              populate: { path: 'profileImg', model: File.name },
+            },
+          ],
+        },
+        {
+          path: 'images',
+          model: File.name,
+        },
+      ]);
+
+    const hasMore = posts.length > limit;
+    const data = hasMore ? posts.slice(0, limit) : posts;
+    const nextCursor = hasMore ? posts[posts.length - 1].createdAt + 1 : null;
+    return {
+      nextCursor,
+      data,
+      hasMore,
+    };
   }
 
   async getPostsByIds(
@@ -221,43 +380,10 @@ export class PostService {
           model: File.name,
         },
       ]);
-    console.log('POST ', posts);
     if (!posts.length) {
       return [];
     }
-    const postIds = posts.map((c) => c.id);
-    const likes = await this.reactionService.findReactionsForPosts(
-      userId,
-      postIds,
-    );
-    const likeCounts = await this.redisService.mget(
-      postIds.map((p) => this.likeCountKey(p)),
-    );
-
-    const likesIds = likes.map((l) => String(l.postId));
-    const postsWithMyLikes: OnePostReturnDto[] = [];
-
-    for (let i = 0; i < posts.length; i++) {
-      const reply = posts[i];
-      const replyCount = await this.postModel.countDocuments({
-        replyTo: reply._id,
-      });
-      if (likesIds.includes(reply.id)) {
-        postsWithMyLikes.push({
-          post: reply,
-          iLiked: true,
-          likeCount: Number(likeCounts[i]) || 0,
-          replyCount,
-        });
-      } else {
-        postsWithMyLikes.push({
-          post: reply,
-          iLiked: false,
-          likeCount: Number(likeCounts[i]) || 0,
-          replyCount,
-        });
-      }
-    }
+    const postsWithMyLikes = await this.postWithUserLikes(posts, userId);
     return postsWithMyLikes;
   }
 
@@ -453,39 +579,7 @@ export class PostService {
         },
       ]);
     if (!replies.length) return { data: [], hasMore: false, nextCursor: null };
-    const postIds = replies.map((c) => c.id);
-    const likes = await this.reactionService.findReactionsForPosts(
-      userId,
-      postIds,
-    );
-    const likeCounts = await this.redisService.mget(
-      postIds.map((p) => this.likeCountKey(p)),
-    );
-
-    const likesIds = likes.map((l) => String(l.postId));
-    const repliesWithMyLikes: OnePostReturnDto[] = [];
-
-    for (let i = 0; i < replies.length; i++) {
-      const reply = replies[i];
-      const replyCount = await this.postModel.countDocuments({
-        replyTo: reply._id,
-      });
-      if (likesIds.includes(reply.id)) {
-        repliesWithMyLikes.push({
-          post: reply,
-          iLiked: true,
-          likeCount: Number(likeCounts[i]) || 0,
-          replyCount,
-        });
-      } else {
-        repliesWithMyLikes.push({
-          post: reply,
-          iLiked: false,
-          likeCount: Number(likeCounts[i]) || 0,
-          replyCount,
-        });
-      }
-    }
+    const repliesWithMyLikes = await this.postWithUserLikes(replies, userId);
     const hasMore = repliesWithMyLikes.length > limit;
     const data = hasMore
       ? repliesWithMyLikes.slice(0, limit)
@@ -494,7 +588,6 @@ export class PostService {
       ? repliesWithMyLikes[limit - 1].post.id
       : undefined;
 
-    console.log('LENGHt', data.length);
     return { data, hasMore, nextCursor };
   }
 
@@ -513,24 +606,19 @@ export class PostService {
     return { post, ancestors: comments.ancestors, replies: comments.replies };
   }
 
-  async myPosts(params: FilterInput, userId: string) {
-    const { limit = 10, page = 1, tags } = params;
-    const filters: FilterQuery<Post> = {};
-    filters.user = userId;
-    if (tags) {
-      /* filters.$or = tags.map((t) => {
-        return {
-          tags: t,
-        };
-      }); */
-      filters.tags = { $elemMatch: { $in: tags } };
-    }
-    const posts = await this.postModel
-      .find(filters)
-      .skip((page - 1) * limit)
-      .limit(limit);
-    const total = await this.postModel.countDocuments(filters);
-    return { page, inThisPage: posts.length, total, data: posts };
+  async postByUser(params: FilterInput, userId: string) {
+    const postsData = await this.findAll(params);
+    const postsWithMyLikes = await this.postWithUserLikes(
+      postsData.data,
+      userId,
+    );
+    return {
+      nextCursor: postsData.nextCursor,
+      // inThisPage: feedPostsData.inThisPage,
+      // inDb: feedPostsData.inDb,
+      hasMore: postsData.hasMore,
+      data: postsWithMyLikes,
+    };
   }
 
   async findOne(id: string) {
@@ -697,7 +785,6 @@ export class PostService {
       };
     }
     const insertResult = await this.reactionService.upsertReaction(data);
-    console.log(insertResult);
     if (insertResult.upsertedId) {
       const likedCount = await this.redisService.increment(
         this.likeCountKey(data.postId),

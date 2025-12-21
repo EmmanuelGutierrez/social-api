@@ -67,6 +67,10 @@ export class FeedPostService {
                 },
               ],
             },
+            {
+              path: 'images',
+              model: File.name,
+            },
           ],
         },
         ,

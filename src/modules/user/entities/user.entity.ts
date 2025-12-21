@@ -2,8 +2,8 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { roles } from 'src/common/enum/roles.enum';
-import { FollowUserDto } from '../dto/user-follow.dto';
 import { File } from 'src/modules/file/entities/file.entity';
+import { Follow } from '../follow/entities/follow.entity';
 
 @ObjectType()
 @Schema({ timestamps: true })
@@ -22,6 +22,10 @@ export class User extends Document {
   @Field(() => String)
   @Prop({ type: String, required: true, unique: true })
   username: string;
+
+  @Field(() => String, { nullable: true })
+  @Prop({ type: String, nullable: true })
+  bio: string;
 
   @Field(() => String)
   @Prop({ type: String, required: true, unique: true })
@@ -50,29 +54,19 @@ export class User extends Document {
   @Prop({ type: Number, select: false })
   refreshTokenExpiresAt?: number;
 
-  @Field(() => [FollowUserDto])
-  @Prop({
-    type: [
-      {
-        followDate: { type: Number },
-        user: { type: Types.ObjectId, ref: User.name },
-      },
-    ],
-    default: [],
-  })
-  following: Types.Array<{ followDate: number; user: User }>;
+  @Field(() => [Follow], { nullable: true })
+  following: Follow[];
 
-  @Field(() => [FollowUserDto])
-  @Prop({
-    type: [
-      {
-        followDate: { type: Number },
-        user: { type: Types.ObjectId, ref: User.name },
-      },
-    ],
-    default: [],
-  })
-  followers: Types.Array<{ followDate: number; user: User }>;
+  @Field(() => [Follow], { nullable: true })
+  followers: Follow[];
+
+  @Field(() => Number)
+  @Prop({ type: Number, default: 0 })
+  followingCount: number;
+
+  @Field(() => Number)
+  @Prop({ type: Number, default: 0 })
+  followersCount: number;
 
   @Field(() => Number)
   @Prop({ type: Number })
@@ -84,3 +78,18 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.virtual('following', {
+  ref: Follow.name,
+  localField: '_id',
+  foreignField: 'follower',
+});
+
+UserSchema.virtual('followers', {
+  ref: Follow.name,
+  localField: '_id',
+  foreignField: 'following',
+});
+
+UserSchema.set('toObject', { virtuals: true });
+UserSchema.set('toJSON', { virtuals: true });

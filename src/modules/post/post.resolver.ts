@@ -140,10 +140,23 @@ export class PostResolver {
     return this.postService.myFeed(params, tokenData.id);
   }
 
-  @Query(() => PostDataReturnDto, { name: 'allPosts' })
-  findAll(@Args('params') params: FilterInput) {
-    return this.postService.findAll(params);
+  @Query(() => MyFeedPostDataReturnDto, { name: 'userPosts' })
+  userPosts(
+    @Args('params') params: FilterInput,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return this.postService.postByUser(params, tokenData.id);
   }
+
+  @Query(() => MyFeedPostDataReturnDto, { name: 'likedPosts' })
+  likedPosts(@Args('params') params: FilterInput) {
+    return this.postService.getLikedPosts(params);
+  }
+
+  // @Query(() => PostDataReturnDto, { name: 'allPosts' })
+  // findAll(@Args('params') params: FilterInput) {
+  //   return this.postService.findAll(params);
+  // }
 
   @IsSubscription()
   @Subscription(() => SubDataReturnDto, {

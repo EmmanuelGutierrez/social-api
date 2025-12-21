@@ -1,5 +1,12 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsArray, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { Field, InputType } from '@nestjs/graphql';
+import {
+  IsArray,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 @InputType()
 export class FilterFeedPostInput {

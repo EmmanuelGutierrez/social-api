@@ -5,39 +5,23 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { tokenInfoI } from 'src/common/interfaces/token.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
+import { UserDataReturnDto } from './dto/user-data-return.dto';
 
 @UseGuards(JwtAuthGuard)
 @Resolver(() => User)
 export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
-  // @Mutation(() => User)
-  // createUser(@Args('createUserInput') createUserInput: CreateUserInput) {
-  //   return this.userService.create(createUserInput);
-  // }
+  @UseGuards(JwtAuthGuard)
+  @Query(() => User, { name: 'meQuery' })
+  async meQuery(@CurrentUser() tokenData: tokenInfoI) {
+    const user = await this.userService.findById(tokenData.id);
+    return user;
+  }
 
-  // @Query(() => [User], { name: 'user' })
-  // findAll() {
-  //   return this.userService.findAll();
-  // }
-
-  // @Query(() => User, { name: 'user' })
-  // findOne(@Args('id', { type: () => Int }) id: number) {
-  //   return this.userService.findOne(id);
-  // }
-
-  // @Mutation(() => User)
-  // updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
-  //   return this.userService.update(updateUserInput.id, updateUserInput);
-  // }
-
-  // @Mutation(() => User)
-  // removeUser(@Args('id', { type: () => Int }) id: number) {
-  //   return this.userService.remove(id);
-  // }
-
-  @Mutation(() => Boolean, { name: 'followUser' })
-  followUser(
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => Boolean)
+  async followUser(
     @Args('userToFollowId') userToFollowId: string,
     @CurrentUser() tokenData: tokenInfoI,
   ) {
@@ -45,10 +29,27 @@ export class UserResolver {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Query(() => User, { name: 'meQuery' })
-  async meQuery(@CurrentUser() tokenData: tokenInfoI) {
-    const user = await this.userService.findById(tokenData.id);
-    return user;
+  @Query(() => UserDataReturnDto, { name: 'userByUsername' })
+  async userByUsername(
+    @Args('username') username: string,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return this.userService.findByUsername(username, tokenData.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => [User], { name: 'suggestedUsers' })
+  async suggestedUsers(@CurrentUser() tokenData: tokenInfoI) {
+    return this.userService.getRandomSuggestedUsers(tokenData.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => Boolean)
+  async unfollowUser(
+    @Args('userToUnfollowId') userToUnfollowId: string,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return this.userService.unfollowUser(tokenData.id, userToUnfollowId);
   }
 
   @UseGuards(JwtAuthGuard)

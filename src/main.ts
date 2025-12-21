@@ -37,7 +37,6 @@ async function bootstrap() {
     process.env.FRONT_URL,
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://c981d626e4e3.ngrok-free.app',
   ];
 
   app.enableCors({
@@ -56,6 +55,7 @@ async function bootstrap() {
       }
       return callback(new Error('Not allowed by CORS'));
     },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
 

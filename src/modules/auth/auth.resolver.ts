@@ -4,9 +4,10 @@ import { LoginInput } from './dto/login.input';
 import { CreateUserInput } from '../user/dto/create-user.input';
 import { AuthReturnDto } from './dto/auth-return.dto';
 import { Request, Response } from 'express';
-import { UploadInput } from '../file/dto/file-upload.dto';
 import { config, configType } from 'src/common/config/config';
 import { Inject } from '@nestjs/common';
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+import { FileUpload } from 'graphql-upload/processRequest.mjs';
 
 @Resolver()
 export class AuthResolver {
@@ -19,12 +20,17 @@ export class AuthResolver {
   async register(
     @Args('register') data: CreateUserInput,
     @Context() ctx,
-    @Args('file') file: UploadInput,
+    @Args('file', { type: () => GraphQLUpload }) file: FileUpload,
   ) {
-    const user = await this.auth.register(data, file.file);
+    console.log('1');
+    const user = await this.auth.register(data, file);
+    console.log('2');
     const accessToken = await this.auth.signAccessToken(user);
+    console.log('3');
     const refreshToken = await this.auth.createRefreshTokenForUser(user._id);
+    console.log('4');
     const wsToken = await this.auth.signAccessTokenWS(user);
+    console.log('5');
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
       sameSite: 'none',
@@ -50,14 +56,16 @@ export class AuthResolver {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
-      // maxAge: 60 * 60 * 1000,
+      maxAge: 60 * 60 * 1000,
+
       // path: '/',
     });
     ctx.res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
-      // maxAge: 60 * 60 * 1000 * 7 * 24,
+      maxAge: 60 * 60 * 1000 * 7 * 24,
+
       // path: '/',
     });
 

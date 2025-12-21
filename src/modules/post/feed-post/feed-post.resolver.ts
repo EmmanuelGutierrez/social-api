@@ -8,6 +8,4 @@ import { UseGuards } from '@nestjs/common';
 @Resolver(() => FeedPost)
 export class FeedPostResolver {
   constructor(private readonly feedPostService: FeedPostService) {}
-
-  
 }

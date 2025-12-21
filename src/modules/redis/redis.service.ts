@@ -93,6 +93,7 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
   }
 
   async mget<T>(keys: RedisKey[]) {
+    if (!keys.length) return [];
     const values = await this.redisProvider.mget(keys);
     const returnValues: T[] = [];
     values.forEach((value) => {

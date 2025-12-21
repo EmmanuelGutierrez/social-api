@@ -1,5 +1,12 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsArray, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 @InputType()
 export class FilterInput {
@@ -8,11 +15,25 @@ export class FilterInput {
   @IsNumber()
   limit?: number;
 
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  username?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsMongoId()
+  authorId?: string | null;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsOptional()
+  onlyMultimedia?: boolean;
+
   @Field(() => Number, { nullable: true })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  page?: number;
+  cursorDate?: number | null;
 
   @Field(() => [String], { nullable: true })
   @IsOptional()
