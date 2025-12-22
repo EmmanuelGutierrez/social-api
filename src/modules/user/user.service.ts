@@ -13,6 +13,7 @@ import { File } from '../file/entities/file.entity';
 import { FollowService } from './follow/follow.service';
 import { Follow } from './follow/entities/follow.entity';
 import { UserDataReturnDto } from './dto/user-data-return.dto';
+import { UpdateUserInput } from './dto/update-user.input';
 
 @Injectable()
 export class UserService {
@@ -76,6 +77,10 @@ export class UserService {
         path: 'profileImg',
         model: File.name,
       },
+      {
+        path: 'bannerImg',
+        model: File.name,
+      },
     ]);
     if (!user) {
       throw new NotFoundException('not found');
@@ -112,6 +117,10 @@ export class UserService {
       },
       {
         path: 'profileImg',
+        model: File.name,
+      },
+      {
+        path: 'bannerImg',
         model: File.name,
       },
     ]);
@@ -192,6 +201,14 @@ export class UserService {
         },
       },
       {
+        $lookup: {
+          from: 'files',
+          localField: 'bannerImg',
+          foreignField: '_id',
+          as: 'bannerImg',
+        },
+      },
+      {
         $unwind: {
           path: '$profileImg',
           preserveNullAndEmptyArrays: true,
@@ -210,6 +227,40 @@ export class UserService {
         `users/files/profile/${user._id}`,
       );
       user.profileImg = file;
+    }
+    return user.save();
+  }
+
+  async updateUser(
+    userId: string,
+    data: UpdateUserInput,
+    filesData?: FileUpload,
+    bannerData?: FileUpload,
+  ) {
+    const user = await this.userModel
+      .findOneAndUpdate({ _id: userId }, data)
+      .populate([
+        { path: 'profileImg', model: File.name },
+        { path: 'bannerImg', model: File.name },
+      ]);
+    if (!user) {
+      throw new NotFoundException('not found');
+    }
+    if (filesData) {
+      const file = await this.fileService.createGraphQL(
+        Promise.resolve(filesData),
+        user._id,
+        `users/files/profile/${user._id}`,
+      );
+      user.profileImg = file;
+    }
+    if (bannerData) {
+      const file = await this.fileService.createGraphQL(
+        Promise.resolve(bannerData),
+        user._id,
+        `users/files/banner/${user._id}`,
+      );
+      user.bannerImg = file;
     }
     return user.save();
   }

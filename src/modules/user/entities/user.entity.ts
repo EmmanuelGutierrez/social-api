@@ -35,6 +35,10 @@ export class User extends Document {
   @Prop({ type: Types.ObjectId, ref: File.name, required: false })
   profileImg?: File;
 
+  @Field(() => File, { nullable: true })
+  @Prop({ type: Types.ObjectId, ref: File.name, required: false })
+  bannerImg?: File;
+
   // @Field(() => String)
   @Prop({
     type: String,
@@ -67,6 +71,10 @@ export class User extends Document {
   @Field(() => Number)
   @Prop({ type: Number, default: 0 })
   followersCount: number;
+
+  @Field(() => Number, { nullable: true })
+  @Prop({ type: Number, nullable: true })
+  birth_date: number;
 
   @Field(() => Number)
   @Prop({ type: Number })

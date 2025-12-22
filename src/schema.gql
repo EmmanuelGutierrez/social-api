@@ -20,7 +20,7 @@ input CreatePostInput {
 }
 
 input CreateUserInput {
-  birth_date: Int!
+  birth_date: Float!
   email: String!
   lastname: String!
   name: String!
@@ -77,10 +77,11 @@ type Mutation {
   likePost(id: String!): RactPostReturnDto!
   login(loginInput: LoginInput!): AuthReturnDto!
   logout: Boolean!
-  register(file: Upload!, register: CreateUserInput!): AuthReturnDto!
+  register(file: Upload, register: CreateUserInput!): AuthReturnDto!
   rotateAccessToken: AuthReturnDto!
   unfollowUser(userToUnfollowId: String!): Boolean!
   updatePost(data: UpdatePostInput!): Post!
+  updateUser(bannerImg: Upload, profileImg: Upload, updateUserInput: UpdateUserInput!): User!
 }
 
 type MyFeedPostDataReturnDto {
@@ -164,12 +165,23 @@ input UpdatePostInput {
   id: String!
 }
 
+input UpdateUserInput {
+  bio: String
+  birth_date: Float
+  email: String
+  lastname: String
+  name: String
+  username: String
+}
+
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
 
 type User {
   _id: ID!
+  bannerImg: File
   bio: String
+  birth_date: Float
   createdAt: Float!
   email: String!
   followers: [Follow!]

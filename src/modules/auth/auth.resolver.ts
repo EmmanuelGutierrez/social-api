@@ -20,17 +20,13 @@ export class AuthResolver {
   async register(
     @Args('register') data: CreateUserInput,
     @Context() ctx,
-    @Args('file', { type: () => GraphQLUpload }) file: FileUpload,
+    @Args('file', { type: () => GraphQLUpload, nullable: true })
+    file: FileUpload,
   ) {
-    console.log('1');
     const user = await this.auth.register(data, file);
-    console.log('2');
     const accessToken = await this.auth.signAccessToken(user);
-    console.log('3');
     const refreshToken = await this.auth.createRefreshTokenForUser(user._id);
-    console.log('4');
     const wsToken = await this.auth.signAccessTokenWS(user);
-    console.log('5');
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
       sameSite: 'none',
@@ -78,7 +74,7 @@ export class AuthResolver {
       const decodeToken = this.auth.decodeToken(
         ctx.req.cookies.access_token as string,
       );
-      console.log('REFRESh');
+      console.log('REFRESh', decodeToken, ctx.req.cookies);
       const newTokens = await this.auth.rotateAccessToken(
         decodeToken.id,
         ctx.req.cookies.refresh_token as string,
@@ -87,6 +83,7 @@ export class AuthResolver {
         httpOnly: true,
         sameSite: 'none',
         secure: true,
+        maxAge: 60 * 60 * 1000,
       });
       console.log('REFRESh end');
       return { tokenWs: newTokens.newTokenWS };

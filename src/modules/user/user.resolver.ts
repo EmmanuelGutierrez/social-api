@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -6,6 +6,8 @@ import { tokenInfoI } from 'src/common/interfaces/token.interface';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { UserDataReturnDto } from './dto/user-data-return.dto';
+import { UpdateUserInput } from './dto/update-user.input';
+import GraphQLUpload, { FileUpload } from 'graphql-upload/GraphQLUpload.mjs';
 
 @UseGuards(JwtAuthGuard)
 @Resolver(() => User)
@@ -35,6 +37,24 @@ export class UserResolver {
     @CurrentUser() tokenData: tokenInfoI,
   ) {
     return this.userService.findByUsername(username, tokenData.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => User)
+  async updateUser(
+    @Args('updateUserInput') updateUserInput: UpdateUserInput,
+    @CurrentUser() tokenData: tokenInfoI,
+    @Args('profileImg', { type: () => GraphQLUpload, nullable: true })
+    profileImg: FileUpload,
+    @Args('bannerImg', { type: () => GraphQLUpload, nullable: true })
+    bannerImg: FileUpload,
+  ) {
+    return this.userService.updateUser(
+      tokenData.id,
+      updateUserInput,
+      profileImg,
+      bannerImg,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
