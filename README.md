@@ -1,4 +1,4 @@
-# 📦 Backend – README.md
+# 📦 Backend
 ## 🧠 Descripción
 
 Este repositorio contiene el backend de una red social, desarrollado con NestJS, GraphQL y MongoDB, enfocado en escalabilidad, seguridad y tiempo real.
