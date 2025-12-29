@@ -9,6 +9,7 @@ import { FilterFeedPostInput } from './dto/filter.input';
 import { User } from 'src/modules/user/entities/user.entity';
 import { FeedPostDataReturnDto } from './dto/feed-post-data-return.dto';
 import { File } from 'src/modules/file/entities/file.entity';
+import { PostStatus } from 'src/common/enum/postStatus.enum';
 
 @Injectable()
 export class FeedPostService {
@@ -36,15 +37,16 @@ export class FeedPostService {
     userId: string,
   ): Promise<FeedPostDataReturnDto> {
     const { limit = 10, cursorDate } = params;
-    console.log('cursorDate', cursorDate);
     const query: RootFilterQuery<FeedPost> = {
       userId: userId,
       createdAt: { $lt: cursorDate || new Date().getTime() },
+      // 'postId.status': {
+      //   $nin: [PostStatus.DELETED_BY_ADMIN, PostStatus.DELETED_BY_USER],
+      // },
     };
     const posts = await this.feedPostModel
       .find(query)
       .sort({ createdAt: -1 })
-      // .skip((page - 1) * limit)
       .limit(limit + 1)
       .populate([
         {

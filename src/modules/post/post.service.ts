@@ -32,6 +32,9 @@ import { OnePostReturnDto } from './dto/one-post-return.dto';
 import { CommentsReturnDto } from './dto/comments-return.dto';
 import { FollowService } from '../user/follow/follow.service';
 import { PostDataReturnDto } from './dto/post-data-return.dto';
+import { PostStatus } from 'src/common/enum/postStatus.enum';
+import { PostReportService } from './post-report/post-report.service';
+import { CreatePostReportInput } from './post-report/dto/create-post-report.input';
 
 @Injectable()
 export class PostService {
@@ -46,6 +49,7 @@ export class PostService {
     private readonly redisService: RedisService,
     @InjectQueue(feedPostQueueName) private postQueue: Queue,
     private readonly followService: FollowService,
+    private readonly postReportService: PostReportService,
   ) {}
 
   private likeCountKey(postId: string) {
@@ -697,6 +701,16 @@ export class PostService {
     return updatedPlanificatedMovement;
   }
 
+  async updatePostStatus(id: string, status: PostStatus) {
+    const updatedPost = await this.postModel
+      .findOneAndUpdate({ _id: id }, { $set: { status } }, { new: true })
+      .exec();
+    if (!updatedPost) {
+      throw new NotFoundException(`Post with id ${id} not found`);
+    }
+    return updatedPost;
+  }
+
   // async updateReactions(id: string, userId: string) {
   //   const post = await this.findOne(id);
   //   const existReaction = post.reactions.some((r) => r.id === userId);
@@ -726,48 +740,6 @@ export class PostService {
     }
     return await post.save();
   }
-
-  /* async toggleLikePost(data: ReactionInput): Promise<RactPostReturnDto> {
-    const lock = await this.redisService.set(
-      this.lockKey(data.postId, data.userId),
-      '1',
-      10,
-    );
-    if (!lock) {
-      return {
-        ignored: true,
-        // liked: false,
-      };
-    }
-    const insertResult = await this.reactionService.upsertReaction(data);
-    if (insertResult.upsertedId) {
-      await this.redisService.increment(this.likeCountKey(data.postId));
-      await this.redisService.set(this.markDirtyKey(data.postId), 0);
-      await this.postQueue.add(
-        'syncPost',
-        { postId: data.postId },
-        { jobId: data.postId },
-      );
-      return { ignored: false };
-    }
-    const deletedResult = await this.reactionService.removeReaction(data);
-    if (deletedResult) {
-      const newVal = await this.redisService.decrement(
-        this.likeCountKey(data.postId),
-      );
-      if (newVal < 0) {
-        await this.redisService.set(this.likeCountKey(data.postId), 0);
-      }
-      await this.redisService.set(this.markDirtyKey(data.postId), 1);
-      await this.postQueue.add(
-        'syncPost',
-        { postId: data.postId },
-        { jobId: data.postId },
-      );
-      return { ignored: false };
-    }
-    return { ignored: false };
-  } */
 
   async likePost(data: ReactionInput): Promise<RactPostReturnDto> {
     const lock = await this.redisService.set(
@@ -891,6 +863,14 @@ export class PostService {
     return `This action removes a #${id} post`;
   }
 
+  // async updateAllPostStatus() {
+  //   const posts = await this.postModel.updateMany(
+  //     { status: { $exists: false } },
+  //     { $set: { status: PostStatus.ACTIVE } },
+  //   );
+  //   return posts;
+  // }
+
   // async commentPost(id: string, userId: string, data: CreatePostInput) {
   //   const post = await this.findOne(id);
   //   const res = await this.postModel.create({
@@ -910,4 +890,56 @@ export class PostService {
   //   ]);
   //   return comments;
   // }
+
+  async deletePost(postId: string) {
+    const post = await this.postModel.findById(postId);
+    if (!post) {
+      throw new Error('Post not found');
+    }
+    post.status = PostStatus.DELETED_BY_ADMIN;
+    await post.save();
+    return post;
+  }
+
+  async deletePostUser(postId: string, userId: string) {
+    const post = await this.postModel.findOne({
+      _id: postId,
+      authorId: new Types.ObjectId(userId),
+    });
+
+    console.log(post, postId);
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    if (
+      post.status === PostStatus.DELETED_BY_USER ||
+      post.status === PostStatus.DELETED_BY_ADMIN
+    ) {
+      throw new Error('Post already deleted');
+    }
+
+    post.status = PostStatus.DELETED_BY_USER;
+    await post.save();
+    return post;
+  }
+
+  async reportPost(data: CreatePostReportInput, userId: string) {
+    const post = await this.postModel.findById(data.postId);
+    if (!post) {
+      throw new Error('Post not found');
+    }
+    const report = await this.postReportService.createReportPost(data, userId);
+
+    if (report) {
+      const totalReports = await this.postReportService.totalReports(
+        data.postId,
+      );
+      if (totalReports >= 5 && post.status !== PostStatus.ACTIVE) {
+        await this.updatePostStatus(data.postId, PostStatus.HIDDEN_BY_REPORTS);
+      }
+    }
+
+    return true;
+  }
 }

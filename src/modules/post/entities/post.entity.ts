@@ -1,6 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { PostStatus } from 'src/common/enum/postStatus.enum';
 import { File } from 'src/modules/file/entities/file.entity';
 // import { postTypes } from 'src/common/constants/post-types.enum';
 // import { File } from 'src/modules/file/entities/file.entity';
@@ -20,9 +21,9 @@ export class Post extends Document {
   @Field(() => String)
   id: string;
 
-  // @Field(() => postTypes)
-  // @Prop({ type: String, enum: postTypes, default: postTypes.POST })
-  // type: postTypes;
+  @Field(() => PostStatus)
+  @Prop({ type: String, enum: PostStatus, default: PostStatus.ACTIVE })
+  status: PostStatus;
 
   @Field(() => String, { nullable: true })
   @Prop({ type: String })

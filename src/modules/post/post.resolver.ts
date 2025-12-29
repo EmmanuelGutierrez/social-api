@@ -12,7 +12,6 @@ import { Post } from './entities/post.entity';
 import { CreatePostInput } from './dto/create-post.input';
 import { UpdatePostInput } from './dto/update-post.input';
 import { GraphQLContext } from 'src/common/interfaces/ctx-graphql';
-import { PostDataReturnDto } from './dto/post-data-return.dto';
 import { FilterInput } from './dto/filter.input';
 import { RedisPubSubService } from '../redis-pub-sub/redis-pub-sub.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -24,7 +23,6 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { IsSubscription } from 'src/common/decorators/isSubscription.decorator';
 import { SubDataReturnDto } from './dto/sub-data-return.dto';
-import { UploadInputArray } from '../file/dto/file-upload.dto';
 import { FilterFeedPostInput } from './feed-post/dto/filter.input';
 import { MyFeedPostDataReturnDto } from './dto/my-feed-post-data-return.dto';
 import { RactPostReturnDto } from './dto/react-post-return.dto';
@@ -34,6 +32,10 @@ import {
   OnlyAllComments,
   PostAndAllComments,
 } from './dto/post-and-comments.dto';
+import { RoleGuard } from '../auth/guards/role.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { roles } from 'src/common/enum/roles.enum';
+import { CreatePostReportInput } from './post-report/dto/create-post-report.input';
 
 @UseGuards(JwtAuthGuard)
 @Resolver(() => Post)
@@ -81,6 +83,11 @@ export class PostResolver {
       files,
     );
   }
+
+  // @Query(() => String, { name: 'testRole' })
+  // getPostById() {
+  //   return 'testRole';
+  // }
 
   @Query(() => Int, { name: 'getLikesCount' })
   getLikesCount(@Args('postId') postId: string) {
@@ -158,6 +165,11 @@ export class PostResolver {
   //   return this.postService.findAll(params);
   // }
 
+  // @Mutation(() => String, { name: 'updateAllPostStatus' })
+  // updateAllPostStatus() {
+  //   return this.postService.updateAllPostStatus();
+  // }
+
   @IsSubscription()
   @Subscription(() => SubDataReturnDto, {
     resolve: (payload: {
@@ -230,17 +242,26 @@ export class PostResolver {
     });
   }
 
-  // @Mutation(() => Post, { name: 'comment' })
-  // async commentPost(
-  //   @Args('data') data: CreatePostInput,
-  //   @Args('id') id: string,
-  //   @CurrentUser() tokenData: tokenInfoI,
-  // ) {
-  //   return await this.postService.commentPost(id, tokenData.id, data);
-  // }
+  @Roles(roles.ADMIN)
+  @UseGuards(RoleGuard)
+  @Mutation(() => Post, { name: 'deletePost' })
+  async deletePost(@Args('id') id: string) {
+    return await this.postService.deletePost(id);
+  }
 
-  // @Query(() => Post, { name: 'getComments' })
-  // async getCommentPost(@Args('id') id: string) {
-  //   return await this.postService.getCommentsPost(id);
-  // }
+  @Mutation(() => Post, { name: 'deletePostUser' })
+  async deletePostUser(
+    @Args('id') id: string,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return await this.postService.deletePostUser(id, tokenData.id);
+  }
+
+  @Mutation(() => Boolean, { name: 'reportPost' })
+  async reportPost(
+    @Args('data') data: CreatePostReportInput,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return await this.postService.reportPost(data, tokenData.id);
+  }
 }

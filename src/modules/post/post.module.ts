@@ -14,6 +14,7 @@ import { UserModule } from '../user/user.module';
 import { ReactionModule } from './reaction/reaction.module';
 import { RedisModule } from '../redis/redis.module';
 import { FollowModule } from '../user/follow/follow.module';
+import { PostReportModule } from './post-report/post-report.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { FollowModule } from '../user/follow/follow.module';
     ReactionModule,
     RedisModule,
     FollowModule,
+    PostReportModule,
     /* MessageModule, */
   ],
   providers: [PostService, PostResolver, PostProcessor],

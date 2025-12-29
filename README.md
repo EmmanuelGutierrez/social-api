@@ -1,73 +1,165 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# 📦 Backend – README.md
+## 🧠 Descripción
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este repositorio contiene el backend de una red social, desarrollado con NestJS, GraphQL y MongoDB, enfocado en escalabilidad, seguridad y tiempo real.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Provee funcionalidades como:
 
-## Description
+- Autenticación con JWT y cookies HttpOnly
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Publicación y comentarios en forma de hilos
 
-## Installation
+- Likes y métricas
 
-```bash
-$ npm install
+- Seguidores / seguidos
+
+- Subida de archivos
+
+- Notificaciones en tiempo real con GraphQL Subscriptions
+
+- Moderación y denuncias de contenido
+
+## 🏗️ Stack tecnológico
+
+- NestJS
+
+- GraphQL (Code First)
+
+- MongoDB + Mongoose
+
+- Apollo Server
+
+- JWT + Refresh Token
+
+- GraphQL Upload
+
+- WebSockets (Subscriptions)
+
+- TypeScript
+
+
+## 🗂️ Arquitectura general
+```
+src/
+├── modules/
+│   ├── auth/
+│   ├── user/
+│   ├── post/
+│   ├── follow/
+│   ├── notification/
+│   ├── file/
+│   └── report/
+├── common/
+│   ├── guards/
+│   ├── decorators/
+│   ├── filters/
+│   └── interceptors/
+├── graphql/
+└── main.ts
+
+```
+Cada módulo está desacoplado y sigue el patrón:
+
+- resolver
+
+- service
+
+- entity / schema
+
+- dto / input
+
+### 🔐 Autenticación
+
+- Login con JWT
+
+- Tokens almacenados en cookies HttpOnly
+
+- Refresh automático del access token
+
+- Protección contra XSS y CSRF
+
+- Contexto GraphQL con usuario autenticado
+
+### 📝 Posts y comentarios
+
+Un post puede ser:
+
+- raíz (feed)
+
+- o respuesta a otro post (replyTo)
+
+- Permite conversaciones encadenadas
+
+- Soporte para:
+
+  - replies directos
+
+  - ancestros
+
+  - paginación por cursor
+
+### ❤️ Likes
+
+- Like / dislike sobre posts
+
+- Contador desacoplado
+
+- Preparado para:
+
+  - optimistic UI
+
+  - refetch selectivo
+
+  - subscriptions
+
+### 🔔 Notificaciones (tiempo real)
+
+GraphQL Subscriptions
+
+Emisión de eventos livianos (IDs)
+
+Escalable para alta concurrencia
+
+Ideal para feeds y alertas en tiempo real
+
+### 📁 Subida de archivos
+
+GraphQL Upload
+
+- Validación de tamaño y tipo
+
+- Asociación con posts y usuarios
+
+- Compatible con compresión previa desde frontend
+
+### 🚨 Moderación y denuncias
+
+- Denuncias por usuarios
+
+- Registro de reportes
+
+- Soft delete de posts
+
+- Eliminación por usuario o administrador
+
+- Auditoría de contenido
+
+## ⚙️ Variables de entorno
 ```
 
-## Running the app
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```
+## 🚀 Instalación y ejecución
+```
+pnpm install
+pnpm run start:dev
 ```
 
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+## Servidor disponible en:
 ```
+http://localhost:3001/graphql
+```
+## 📌 Notas
 
-## Support
+Compatible con entornos locales y túneles (ngrok)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+Enfoque en buenas prácticas y escalabilidad

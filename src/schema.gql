@@ -19,6 +19,12 @@ input CreatePostInput {
   title: String
 }
 
+input CreatePostReportInput {
+  description: String
+  postId: String!
+  reason: String!
+}
+
 input CreateUserInput {
   birth_date: Float!
   email: String!
@@ -72,12 +78,15 @@ input LoginInput {
 
 type Mutation {
   createPost(data: CreatePostInput!, files: [Upload!]!): Post!
+  deletePost(id: String!): Post!
+  deletePostUser(id: String!): Post!
   dislikePost(id: String!): RactPostReturnDto!
   followUser(userToFollowId: String!): Boolean!
   likePost(id: String!): RactPostReturnDto!
   login(loginInput: LoginInput!): AuthReturnDto!
   logout: Boolean!
   register(file: Upload, register: CreateUserInput!): AuthReturnDto!
+  reportPost(data: CreatePostReportInput!): Boolean!
   rotateAccessToken: AuthReturnDto!
   unfollowUser(userToUnfollowId: String!): Boolean!
   updatePost(data: UpdatePostInput!): Post!
@@ -112,6 +121,7 @@ type Post {
   images: [File!]
   reactionsCount: Float!
   replyTo: Post
+  status: PostStatus!
   tags: [String!]!
   title: String
   updatedAt: Float!
@@ -121,6 +131,13 @@ type PostAndAllComments {
   ancestors: CommentsReturnDto!
   post: OnePostReturnDto!
   replies: CommentsReturnDto!
+}
+
+enum PostStatus {
+  ACTIVE
+  DELETED_BY_ADMIN
+  DELETED_BY_USER
+  HIDDEN_BY_REPORTS
 }
 
 type Query {
