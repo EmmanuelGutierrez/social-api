@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -15,23 +15,14 @@ export class UserResolver {
   constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Query(() => User, { name: 'meQuery' })
+  @Query(() => User, { name: 'UserMeQuery' })
   async meQuery(@CurrentUser() tokenData: tokenInfoI) {
     const user = await this.userService.findById(tokenData.id);
     return user;
   }
 
   @UseGuards(JwtAuthGuard)
-  @Mutation(() => Boolean)
-  async followUser(
-    @Args('userToFollowId') userToFollowId: string,
-    @CurrentUser() tokenData: tokenInfoI,
-  ) {
-    return this.userService.followUser(tokenData.id, userToFollowId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Query(() => UserDataReturnDto, { name: 'userByUsername' })
+  @Query(() => UserDataReturnDto, { name: 'UserByUsername' })
   async userByUsername(
     @Args('username') username: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -40,7 +31,7 @@ export class UserResolver {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Mutation(() => User)
+  @Mutation(() => User, { name: 'UserUpdate' })
   async updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
     @CurrentUser() tokenData: tokenInfoI,
@@ -58,13 +49,13 @@ export class UserResolver {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Query(() => [User], { name: 'suggestedUsers' })
+  @Query(() => [User], { name: 'UserSuggestedUsers' })
   async suggestedUsers(@CurrentUser() tokenData: tokenInfoI) {
     return this.userService.getRandomSuggestedUsers(tokenData.id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Mutation(() => Boolean)
+  @Mutation(() => Boolean, { name: 'UserUnfollow' })
   async unfollowUser(
     @Args('userToUnfollowId') userToUnfollowId: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -73,8 +64,11 @@ export class UserResolver {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Query(() => String, { name: 'test' })
-  test() {
-    return ' TEST';
+  @Mutation(() => Boolean, { name: 'UserFollowUser' })
+  async followUser(
+    @Args('userToFollowId') userToFollowId: string,
+    @CurrentUser() tokenData: tokenInfoI,
+  ) {
+    return this.userService.followUser(tokenData.id, userToFollowId);
   }
 }

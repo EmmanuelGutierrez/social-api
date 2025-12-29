@@ -70,7 +70,7 @@ export class PostResolver {
   //   );
   // }
 
-  @Mutation(() => Post, { name: 'createPost' })
+  @Mutation(() => Post, { name: 'PostCreatePost' })
   create(
     @Args('data') data: CreatePostInput,
     @Context() ctx: GraphQLContext,
@@ -84,17 +84,12 @@ export class PostResolver {
     );
   }
 
-  // @Query(() => String, { name: 'testRole' })
-  // getPostById() {
-  //   return 'testRole';
-  // }
-
-  @Query(() => Int, { name: 'getLikesCount' })
+  @Query(() => Int, { name: 'PostGetLikesCount' })
   getLikesCount(@Args('postId') postId: string) {
     return this.postService.getLikesCount(postId);
   }
 
-  @Query(() => [OnePostReturnDto], { name: 'getPostsByIds' })
+  @Query(() => [OnePostReturnDto], { name: 'PostGetPostsByIds' })
   getPostsByIds(
     @CurrentUser() tokenData: tokenInfoI,
     @Args('postsIds', { type: () => [String] })
@@ -103,7 +98,7 @@ export class PostResolver {
     return this.postService.getPostsByIds(postsIds, tokenData.id);
   }
 
-  @Query(() => CommentsReturnDto, { name: 'getComments' })
+  @Query(() => CommentsReturnDto, { name: 'PostGetComments' })
   getComments(
     @Args('postId') postId: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -115,7 +110,7 @@ export class PostResolver {
     );
   }
 
-  @Query(() => CommentsReturnDto, { name: 'getAncestorsComments' })
+  @Query(() => CommentsReturnDto, { name: 'PostGetAncestorsComments' })
   getAncestorsComments(
     @Args('postId') postId: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -123,7 +118,7 @@ export class PostResolver {
     return this.postService.getAncestors(postId, 5, tokenData.id);
   }
 
-  @Query(() => OnlyAllComments, { name: 'getAllComments' })
+  @Query(() => OnlyAllComments, { name: 'PostGetAllComments' })
   getAllComments(
     @Args('postId') postId: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -131,7 +126,7 @@ export class PostResolver {
     return this.postService.getAllComments(postId, tokenData.id);
   }
 
-  @Query(() => PostAndAllComments, { name: 'postAndAllComments' })
+  @Query(() => PostAndAllComments, { name: 'PostGetPostAndAllComments' })
   postAndAllComments(
     @Args('postId') postId: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -139,7 +134,7 @@ export class PostResolver {
     return this.postService.getPostWithAllComments(postId, tokenData.id);
   }
 
-  @Query(() => MyFeedPostDataReturnDto, { name: 'myFeed' })
+  @Query(() => MyFeedPostDataReturnDto, { name: 'PostMyFeed' })
   myFeed(
     @Args('params') params: FilterFeedPostInput,
     @CurrentUser() tokenData: tokenInfoI,
@@ -147,7 +142,7 @@ export class PostResolver {
     return this.postService.myFeed(params, tokenData.id);
   }
 
-  @Query(() => MyFeedPostDataReturnDto, { name: 'userPosts' })
+  @Query(() => MyFeedPostDataReturnDto, { name: 'PostUserPosts' })
   userPosts(
     @Args('params') params: FilterInput,
     @CurrentUser() tokenData: tokenInfoI,
@@ -155,20 +150,10 @@ export class PostResolver {
     return this.postService.postByUser(params, tokenData.id);
   }
 
-  @Query(() => MyFeedPostDataReturnDto, { name: 'likedPosts' })
+  @Query(() => MyFeedPostDataReturnDto, { name: 'PostLikedPosts' })
   likedPosts(@Args('params') params: FilterInput) {
     return this.postService.getLikedPosts(params);
   }
-
-  // @Query(() => PostDataReturnDto, { name: 'allPosts' })
-  // findAll(@Args('params') params: FilterInput) {
-  //   return this.postService.findAll(params);
-  // }
-
-  // @Mutation(() => String, { name: 'updateAllPostStatus' })
-  // updateAllPostStatus() {
-  //   return this.postService.updateAllPostStatus();
-  // }
 
   @IsSubscription()
   @Subscription(() => SubDataReturnDto, {
@@ -192,38 +177,20 @@ export class PostResolver {
     return this.redisPubSub.asyncIterator(`SUB_NEW_POSTS-${tokenData.id}`);
   }
 
-  // @Query(() => PostDataReturnDto, { name: 'myPosts' })
-  // findMe(
-  //   @Args('params') params: FilterInput,
-  //   @CurrentUser() tokenData: tokenInfoI,
-  // ) {
-  //   return this.postService.myPosts(params, tokenData.id);
-  // }
-
-  @Query(() => OnePostReturnDto, { name: 'getOne' })
+  @Query(() => OnePostReturnDto, { name: 'PostGetOne' })
   findOne(@Args('id') id: string, @CurrentUser() tokenData: tokenInfoI) {
     return this.postService.getOne({ postId: id, userId: tokenData.id });
   }
 
-  @Mutation(() => Post, { name: 'updatePost' })
+  @Mutation(() => Post, { name: 'PostUpdatePost' })
   update(
     @Args('data') data: UpdatePostInput,
     @CurrentUser() tokenData: tokenInfoI,
   ) {
     return this.postService.update(data, tokenData.id);
   }
-  // @Mutation(() => RactPostReturnDto, { name: 'reactPost' })
-  // async reactPosts(
-  //   @Args('id') id: string,
-  //   @CurrentUser() tokenData: tokenInfoI,
-  // ) {
-  //   return await this.postService.toggleLikePost({
-  //     postId: id,
-  //     userId: tokenData.id,
-  //   });
-  // }
 
-  @Mutation(() => RactPostReturnDto, { name: 'likePost' })
+  @Mutation(() => RactPostReturnDto, { name: 'PostLikePost' })
   async likePost(@Args('id') id: string, @CurrentUser() tokenData: tokenInfoI) {
     return await this.postService.likePost({
       postId: id,
@@ -231,7 +198,7 @@ export class PostResolver {
     });
   }
 
-  @Mutation(() => RactPostReturnDto, { name: 'dislikePost' })
+  @Mutation(() => RactPostReturnDto, { name: 'PostDislikePost' })
   async dislikePost(
     @Args('id') id: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -244,12 +211,12 @@ export class PostResolver {
 
   @Roles(roles.ADMIN)
   @UseGuards(RoleGuard)
-  @Mutation(() => Post, { name: 'deletePost' })
+  @Mutation(() => Post, { name: 'PostDeletePost' })
   async deletePost(@Args('id') id: string) {
     return await this.postService.deletePost(id);
   }
 
-  @Mutation(() => Post, { name: 'deletePostUser' })
+  @Mutation(() => Post, { name: 'PostDeletePostUser' })
   async deletePostUser(
     @Args('id') id: string,
     @CurrentUser() tokenData: tokenInfoI,
@@ -257,7 +224,7 @@ export class PostResolver {
     return await this.postService.deletePostUser(id, tokenData.id);
   }
 
-  @Mutation(() => Boolean, { name: 'reportPost' })
+  @Mutation(() => Boolean, { name: 'PostReportPost' })
   async reportPost(
     @Args('data') data: CreatePostReportInput,
     @CurrentUser() tokenData: tokenInfoI,

@@ -77,20 +77,20 @@ input LoginInput {
 }
 
 type Mutation {
-  createPost(data: CreatePostInput!, files: [Upload!]!): Post!
-  deletePost(id: String!): Post!
-  deletePostUser(id: String!): Post!
-  dislikePost(id: String!): RactPostReturnDto!
-  followUser(userToFollowId: String!): Boolean!
-  likePost(id: String!): RactPostReturnDto!
-  login(loginInput: LoginInput!): AuthReturnDto!
-  logout: Boolean!
-  register(file: Upload, register: CreateUserInput!): AuthReturnDto!
-  reportPost(data: CreatePostReportInput!): Boolean!
-  rotateAccessToken: AuthReturnDto!
-  unfollowUser(userToUnfollowId: String!): Boolean!
-  updatePost(data: UpdatePostInput!): Post!
-  updateUser(bannerImg: Upload, profileImg: Upload, updateUserInput: UpdateUserInput!): User!
+  AuthLogin(loginInput: LoginInput!): AuthReturnDto!
+  AuthLogout: Boolean!
+  AuthRegister(file: Upload, register: CreateUserInput!): AuthReturnDto!
+  AuthRotateAccessToken: AuthReturnDto!
+  PostCreatePost(data: CreatePostInput!, files: [Upload!]!): Post!
+  PostDeletePost(id: String!): Post!
+  PostDeletePostUser(id: String!): Post!
+  PostDislikePost(id: String!): RactPostReturnDto!
+  PostLikePost(id: String!): RactPostReturnDto!
+  PostReportPost(data: CreatePostReportInput!): Boolean!
+  PostUpdatePost(data: UpdatePostInput!): Post!
+  UserFollowUser(userToFollowId: String!): Boolean!
+  UserUnfollow(userToUnfollowId: String!): Boolean!
+  UserUpdate(bannerImg: Upload, profileImg: Upload, updateUserInput: UpdateUserInput!): User!
 }
 
 type MyFeedPostDataReturnDto {
@@ -141,25 +141,23 @@ enum PostStatus {
 }
 
 type Query {
-  allFiles: [File!]!
-  getAllComments(postId: String!): OnlyAllComments!
-  getAncestorsComments(postId: String!): CommentsReturnDto!
-  getComments(cursor: String, postId: String!): CommentsReturnDto!
-  getFollowCount(userId: String!): Int!
-  getFollowerCount(userId: String!): Int!
-  getFollowers(cursor: String!, limit: Float!, userId: String!): Follow!
-  getFollowing(cursor: String!, limit: Float!, userId: String!): Follow!
-  getLikesCount(postId: String!): Int!
-  getOne(id: String!): OnePostReturnDto!
-  getPostsByIds(postsIds: [String!]!): [OnePostReturnDto!]!
-  likedPosts(params: FilterInput!): MyFeedPostDataReturnDto!
-  meQuery: User!
-  myFeed(params: FilterFeedPostInput!): MyFeedPostDataReturnDto!
-  postAndAllComments(postId: String!): PostAndAllComments!
-  suggestedUsers: [User!]!
-  test: String!
-  userByUsername(username: String!): UserDataReturnDto!
-  userPosts(params: FilterInput!): MyFeedPostDataReturnDto!
+  FollowCount(userId: String!): Int!
+  FollowGetFollowers(cursor: String!, limit: Float!, userId: String!): Follow!
+  FollowGetFollowing(cursor: String!, limit: Float!, userId: String!): Follow!
+  FollowerCount(userId: String!): Int!
+  PostGetAllComments(postId: String!): OnlyAllComments!
+  PostGetAncestorsComments(postId: String!): CommentsReturnDto!
+  PostGetComments(cursor: String, postId: String!): CommentsReturnDto!
+  PostGetLikesCount(postId: String!): Int!
+  PostGetOne(id: String!): OnePostReturnDto!
+  PostGetPostAndAllComments(postId: String!): PostAndAllComments!
+  PostGetPostsByIds(postsIds: [String!]!): [OnePostReturnDto!]!
+  PostLikedPosts(params: FilterInput!): MyFeedPostDataReturnDto!
+  PostMyFeed(params: FilterFeedPostInput!): MyFeedPostDataReturnDto!
+  PostUserPosts(params: FilterInput!): MyFeedPostDataReturnDto!
+  UserByUsername(username: String!): UserDataReturnDto!
+  UserMeQuery: User!
+  UserSuggestedUsers: [User!]!
 }
 
 type RactPostReturnDto {

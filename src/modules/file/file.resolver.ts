@@ -1,4 +1,4 @@
-import { Resolver, Query } from '@nestjs/graphql';
+import { Resolver } from '@nestjs/graphql';
 import { FileService } from './file.service';
 import { File } from './entities/file.entity';
 
@@ -6,8 +6,8 @@ import { File } from './entities/file.entity';
 export class FileResolver {
   constructor(private readonly fileService: FileService) {}
 
-  @Query(() => [File], { name: 'allFiles' })
-  findAll() {
-    return this.fileService.getAll();
-  }
+  // @Query(() => [File], { name: 'allFiles' })
+  // findAll() {
+  //   return this.fileService.getAll();
+  // }
 }

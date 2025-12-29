@@ -1,4 +1,4 @@
-import { Resolver, Mutation, Args, Context, Query } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Context } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import { LoginInput } from './dto/login.input';
 import { CreateUserInput } from '../user/dto/create-user.input';
@@ -16,7 +16,7 @@ export class AuthResolver {
     @Inject(config.KEY) private configService: configType,
   ) {}
 
-  @Mutation(() => AuthReturnDto)
+  @Mutation(() => AuthReturnDto, { name: 'AuthRegister' })
   async register(
     @Args('register') data: CreateUserInput,
     @Context() ctx,
@@ -41,9 +41,8 @@ export class AuthResolver {
     return { tokenWs: wsToken };
   }
 
-  @Mutation(() => AuthReturnDto)
+  @Mutation(() => AuthReturnDto, { name: 'AuthLogin' })
   async login(@Args('loginInput') data: LoginInput, @Context() ctx) {
-    console.log('prod', this.configService.api.env === 'production');
     const user = await this.auth.validateUser(data.email, data.password);
     const accessToken = await this.auth.signAccessToken(user);
     const refreshToken = await this.auth.createRefreshTokenForUser(user._id);
@@ -68,7 +67,7 @@ export class AuthResolver {
     return { tokenWs: wsToken };
   }
 
-  @Mutation(() => AuthReturnDto, { name: 'rotateAccessToken' })
+  @Mutation(() => AuthReturnDto, { name: 'AuthRotateAccessToken' })
   async rotateAccessToken(@Context() ctx) {
     try {
       const decodeToken = this.auth.decodeToken(
@@ -91,7 +90,7 @@ export class AuthResolver {
       console.log('error', error);
     }
   }
-  @Mutation(() => Boolean, { name: 'logout' })
+  @Mutation(() => Boolean, { name: 'AuthLogout' })
   async logout(@Context() ctx: { res: Response; req: Request }) {
     try {
       const decodeToken = this.auth.decodeToken(
