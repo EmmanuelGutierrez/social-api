@@ -5,9 +5,9 @@ export const RedisProvider = {
   provide: 'REDIS',
   inject: [ConfigService],
   useFactory: async (configService: ConfigService) => {
-    console.log('redisprovider');
     const client = new Redis({
       host: configService.get<string>('config.redis.host') as string,
+      username: configService.get<string>('config.redis.username') as string,
       port: configService.get<number>('config.redis.port') as number,
       db: configService.get<number>('config.redis.db') as number,
       password: configService.get<string>('config.redis.password') as string,

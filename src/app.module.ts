@@ -87,6 +87,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         REDIS_PORT: Joi.number().required(),
         REDIS_DB: Joi.number().required(),
         REDIS_PASSWORD: Joi.string(),
+        REDIS_USERNAME: Joi.string(),
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
         CLOUDINARY_CLOUD_NAME: Joi.string().required(),

@@ -23,6 +23,7 @@ export const config = registerAs('config', () => {
       password: process.env.REDIS_PASSWORD,
       port: Number(process.env.REDIS_PORT),
       db: Number(process.env.REDIS_DB),
+      username: process.env.REDIS_USERNAME,
     },
     cloudinary: {
       apiKey: process.env.CLOUDINARY_API_KEY,
