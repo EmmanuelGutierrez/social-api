@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import * as cookieParser from 'cookie-parser';
-import * as csurf from 'csurf';
+// import * as csurf from 'csurf';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './common/exception/http-exception-filter';
@@ -44,6 +44,7 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (error: Error | null, result?: boolean) => void,
     ) => {
+      console.log('ORIGIN', origin);
       if (!origin) {
         return callback(null, true);
       }
@@ -57,6 +58,13 @@ async function bootstrap() {
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
   });
 
   // CSRF solo si usás cookies y sesiones
