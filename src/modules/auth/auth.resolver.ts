@@ -29,12 +29,12 @@ export class AuthResolver {
     const wsToken = await this.auth.signAccessTokenWS(user);
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: 'strict',
       secure: true,
     });
     ctx.res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: 'strict',
       secure: true,
     });
 
@@ -49,7 +49,7 @@ export class AuthResolver {
     const wsToken = await this.auth.signAccessTokenWS(user);
     ctx.res.cookie('access_token', accessToken, {
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: 'strict',
       secure: true,
       maxAge: 60 * 60 * 1000,
 
@@ -57,7 +57,7 @@ export class AuthResolver {
     });
     ctx.res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: 'strict',
       secure: true,
       maxAge: 60 * 60 * 1000 * 7 * 24,
 
@@ -80,7 +80,7 @@ export class AuthResolver {
       );
       ctx.res.cookie('access_token', newTokens.newToken, {
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: 'strict',
         secure: true,
         maxAge: 60 * 60 * 1000,
       });
@@ -100,24 +100,28 @@ export class AuthResolver {
       await this.auth.clearRefreshToken(decodeToken.id);
       ctx.res.clearCookie('access_token', {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: 'strict',
+        secure: true,
         path: '/',
       });
       ctx.res.clearCookie('refresh_token', {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: 'strict',
+        secure: true,
         path: '/',
       });
       return true;
     } catch (error) {
       ctx.res.clearCookie('access_token', {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: 'strict',
+        secure: true,
         path: '/',
       });
       ctx.res.clearCookie('refresh_token', {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: 'strict',
+        secure: true,
         path: '/',
       });
       console.log('e', error);
