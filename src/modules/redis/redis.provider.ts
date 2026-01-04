@@ -12,7 +12,7 @@ export const RedisProvider = {
       db: configService.get<number>('config.redis.db') as number,
       password: configService.get<string>('config.redis.password') as string,
     });
-    await client.config('SET', 'notify-keyspace-events', 'Ex').then();
+    // await client.config('SET', 'notify-keyspace-events', 'Ex').then();
     return client;
   },
 };
