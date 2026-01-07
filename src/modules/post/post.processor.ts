@@ -29,6 +29,7 @@ class PostProcessor extends WorkerHost {
             followerId: string;
           };
         } = job;
+        console.log('publishing to: ', `SUB_NEW_POSTS-${data.followerId}`);
         await this.redisPubSub.publish(`SUB_NEW_POSTS-${data.followerId}`, {
           [SUB_NEW_POSTS]: {
             postId: data.postId,

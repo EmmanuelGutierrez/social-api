@@ -173,6 +173,7 @@ export class PostResolver {
     @CurrentUser() tokenData: tokenInfoI,
   ) {
     console.log('tokenData', tokenData);
+    console.log('susscribed to: ', `SUB_NEW_POSTS-${tokenData.id}`);
     // return this.postService.findAll(params);
     return this.redisPubSub.asyncIterator(`SUB_NEW_POSTS-${tokenData.id}`);
   }
