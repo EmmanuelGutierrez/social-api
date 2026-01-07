@@ -156,6 +156,7 @@ type Query {
   PostMyFeed(params: FilterFeedPostInput!): MyFeedPostDataReturnDto!
   PostUserPosts(params: FilterInput!): MyFeedPostDataReturnDto!
   UserByUsername(username: String!): UserDataReturnDto!
+  UserFindUser(limit: Float!, query: String!): [User!]!
   UserMeQuery: User!
   UserSuggestedUsers: [User!]!
 }

@@ -71,4 +71,10 @@ export class UserResolver {
   ) {
     return this.userService.followUser(tokenData.id, userToFollowId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Query(() => [User], { name: 'UserFindUser' })
+  async findUser(@Args('query') query: string, @Args('limit') limit: number) {
+    return this.userService.findUser(query, limit);
+  }
 }

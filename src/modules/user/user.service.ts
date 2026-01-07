@@ -14,6 +14,7 @@ import { FollowService } from './follow/follow.service';
 import { Follow } from './follow/entities/follow.entity';
 import { UserDataReturnDto } from './dto/user-data-return.dto';
 import { UpdateUserInput } from './dto/update-user.input';
+import { normalize } from 'src/common/utils/normalize';
 
 @Injectable()
 export class UserService {
@@ -131,6 +132,42 @@ export class UserService {
       ? await this.followService.isFollowing(userId, user._id)
       : false;
     return { user, isFollowing: !!isFollowing };
+  }
+
+  async findUser(query: string, limit: number) {
+    const normalizedQuery = normalize(query);
+    const regex = new RegExp(normalizedQuery.replace(' ', '.*'), 'i');
+    const terms = query
+      .trim()
+      .split(/\s+/)
+      .map((t) => new RegExp(t, 'i'));
+    const users = await this.userModel
+      .find({
+        $or: [
+          {
+            $or: [
+              { username: { $regex: regex } },
+              { name: { $regex: regex } },
+              { lastname: { $regex: regex } },
+            ],
+          },
+          {
+            $and: terms.map((term) => ({
+              $or: [{ name: { $regex: term } }, { lastname: { $regex: term } }],
+            })),
+          },
+        ],
+      })
+      .populate([
+        {
+          path: 'profileImg',
+          model: File.name,
+        },
+      ])
+      .limit(limit)
+      .select('_id username name lastname profileImg');
+
+    return users;
   }
 
   async followUser(userId: string, userToFollowId: string) {
