@@ -166,7 +166,9 @@ export class PostService {
       userId: userId,
     });
     // const followers = await this.followService.getFollowers(userId);
+    console.log('followers', user.followers);
     for (const follower of user.followers) {
+      console.log('follower', follower);
       await this.postQueue.add('addToFeed', {
         postId: post._id,
         followerId: follower.follower._id,
